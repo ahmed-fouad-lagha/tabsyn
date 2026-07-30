@@ -1,0 +1,12 @@
+{
+    "in_dim": 60,
+    "hidden_size": 1024,
+    "num_res_blocks": 4,
+    "temperatures": [
+        0.1,
+        0.5,
+        1.0,
+        2.0
+    ],
+    "dataname": "adult"
+}
