@@ -42,7 +42,9 @@ def main(args):
 
     norm_stats = torch.load(norm_path, map_location=device)
     mean = norm_stats['mean'].to(device)
-    std = norm_stats['std'].to(device)
+    std = norm_stats.get('std', None)
+    if std is not None:
+        std = std.to(device)
 
     model = TabDriftGenerator(z_dim=in_dim, hidden_size=hidden_size, num_res_blocks=num_res_blocks).to(device)
     model.load_state_dict(torch.load(drift_ckpt_path, map_location=device))
@@ -64,8 +66,7 @@ def main(args):
                 target_z = model(z)
                 z = z + dt * (target_z - z)
             fake_z = z
-        if 'std' in norm_stats:
-            std = norm_stats['std'].to(device)
+        if std is not None:
             fake_z = fake_z * std + mean
         else:
             fake_z = fake_z * 2.0 + mean
