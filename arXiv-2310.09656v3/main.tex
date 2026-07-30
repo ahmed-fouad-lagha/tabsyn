@@ -1,0 +1,189 @@
+\documentclass{article} % For LaTeX2e
+\usepackage{iclr2024_conference,times}
+
+% Optional math commands from https://github.com/goodfeli/dlbook_notation.
+\input{math_commands.tex}
+
+\usepackage{listings}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+% \usepackage{amssymb}
+\usepackage{microtype}      % microtypography
+% \usepackage{xcolor}         % colors
+\usepackage{bm}
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables 
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{url,hyphenat}
+\usepackage{caption,subfigure,graphics,epstopdf,multirow,multicol,booktabs,verbatim,wrapfig,bm}
+
+\usepackage{diagbox}
+\usepackage{xcolor}
+\definecolor{mycitecolor}{RGB}{0,0,153}
+\definecolor{mylinkcolor}{RGB}{179,0,0}
+\definecolor{myurlcolor}{RGB}{255,0,0}
+\definecolor{darkgreen}{RGB}{0,170,0}
+\definecolor{darkred}{RGB}{200,0,0}
+
+\usepackage[colorlinks,
+            linkcolor=mylinkcolor,
+            urlcolor=teal,
+            anchorcolor=blue,
+            citecolor=mycitecolor,
+            ]{hyperref}
+
+\usepackage{makecell}
+\usepackage{tablefootnote}
+\usepackage{bbding} 
+\usepackage{threeparttable}
+\usepackage{multirow}
+\usepackage{multicol}
+
+\usepackage{subfigure}
+% \usepackage{xspace}
+
+\usepackage{amsthm}
+\usepackage{pifont}
+\usepackage{makecell,colortbl,skak}
+\usepackage{soul}
+
+\usepackage{algorithmic}
+\usepackage[vlined,commentsnumbered,linesnumbered,ruled]{algorithm2e}
+
+
+% \newcommand{\tickYes}{{{\color{darkgreen}\checkmark}}}
+% \usepackage{pifont}
+% \newcommand{\tickNo}{{\color{darkred} \hspace{1pt}{\ding{55}}}}
+
+\newcommand{\tickYes}{{{\checkmark}}}
+\newcommand{\tickNo}{{\hspace{1pt}{\ding{55}}}}
+
+\usepackage{amsthm}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{remark}{Remark}
+\newtheorem{corollary}{Corollary}
+
+
+
+
+% \theoremstyle{plain}
+% \newtheorem{theorem}{Theorem}[section]
+% \newtheorem{proposition}[theorem]{Proposition}
+% \newtheorem{lemma}[theorem]{Lemma}
+% \newtheorem{corollary}[theorem]{Corollary}
+% \theoremstyle{definition}
+% \newtheorem{definition}[theorem]{Definition}
+% \newtheorem{assumption}[theorem]{Assumption}
+% \theoremstyle{remark}
+% \newtheorem{remark}[theorem]{Remark}
+
+% Define color
+\usepackage{xcolor} 
+\definecolor{brickred}{rgb}{0.8, 0.25, 0.33}
+\definecolor{midnightblue}{rgb}{0.1, 0.1, 0.44}
+\definecolor{oceanboatblue}{rgb}{0.0, 0.47, 0.75}
+\newcommand{\redbf}[1]{\bf{\textcolor{brickred}{#1}}}
+\newcommand{\bluebf}[1]{\bf{\textcolor{oceanboatblue}{#1}}}
+\newcommand{\modelname}{{\sc TabSyn}\xspace}
+\newcommand{\num}{{\rm num}}
+\newcommand{\cat}{{\rm cat}}
+\newcommand{\oh}{{\rm oh}}
+\newcommand{\myTag}[1]{{\bf \underline{ #1}}}
+
+\newcommand{\myEmphasis}[1]{{\bf #1}}
+
+\newcommand{\generality}{\myEmphasis{Generality}\xspace}
+\newcommand{\quality}{\myEmphasis{Quality}\xspace}
+\newcommand{\speed}{\myEmphasis{Speed}\xspace}
+
+\newcommand{\jiani}[1]{ {\color{pink} [Jiani: #1]}}
+\newcommand{\christos}[1]{ {\color{red} [Christos: #1]}}
+\newcommand{\zhengyuan}[1]{ {\color{orange} [Zhengyuan: #1]}}
+\newcommand{\bala}[1]{{\color{blue}[Bala: #1]}}
+\newcommand{\hengrui}[1]{{\color{red}[hengrui: #1]}}
+\newcommand{\huzefa}[1]{{\color{green}[HR: #1]}}
+\newcommand{\xiao}[1]{{\color{blue}[Xiao: #1]}}
+
+
+\newcommand{\makeClean}{
+    \renewcommand{\hengrui}[1]{}
+    \renewcommand{\jiani}[1]{}
+    \renewcommand{\christos}[1]{}
+    \renewcommand{\zhengyuan}[1]{}
+    \renewcommand{\bala}[1]{}
+    \renewcommand{\huzefa}[1]{}
+    \renewcommand{\xiao}[1]{}
+}
+
+\title{Mixed-Type Tabular Data Synthesis with Score-based Diffusion in Latent Space}
+% Authors must not appear in the submitted version. They should be hidden
+% as long as the \iclrfinalcopy macro remains commented out below.
+% Non-anonymous submissions will be rejected without review.
+
+
+
+\author{Hengrui Zhang\textsuperscript{1}\thanks{Work conducted during an internship at Amazon Web Services.}\quad  Jiani Zhang\textsuperscript{2}\thanks{Corresponding author.} \quad Balasubramaniam Srinivasan\textsuperscript{2} \quad Zhengyuan Shen\textsuperscript{2} 
+ \\ \textbf{Xiao Qin\textsuperscript{2} \quad Christos Faloutsos\textsuperscript{2} \quad Huzefa Rangwala\textsuperscript{2,3}\thanks{Huzefa Rangwala is on LOA as a Professor of Computer Science at George Mason University. This paper describes work performed at Amazon.} \quad George Karypis\textsuperscript{2}   } \\
+\textsuperscript{1}Computer Science Department, University of Illinois at Chicago \quad \textsuperscript{2}Amazon Web Services \quad \\
+\textsuperscript{3}Computer Science, George Mason University \quad
+\\
+\texttt{hzhan55@uic.edu} \quad \texttt{\{zhajiani,srbalasu,donshen\}@amazon.com}  \\
+\texttt{\{drxqin,faloutso,rhuzefa,gkarypis\}@amazon.com}
+}
+
+
+% The \author macro works with any number of authors. There are two commands
+% used to separate the names and addresses of multiple authors: \And and \AND.
+%
+% Using \And between authors leaves it to \LaTeX{} to determine where to break
+% the lines. Using \AND forces a linebreak at that point. So, if \LaTeX{}
+% puts 3 of 4 authors names on the first line, and the last on the second
+% line, try using \AND instead of \And before the third author name.
+
+
+
+\iclrfinalcopy % Uncomment for camera-ready version, but NOT for submission.
+\begin{document}
+
+
+\maketitle
+
+\begin{abstract}
+Recent advances in tabular data generation have greatly enhanced synthetic data quality. However, extending diffusion models to tabular data is challenging due to the intricately varied distributions and a blend of data types of tabular data. This paper introduces \modelname, a methodology that synthesizes tabular data by leveraging a diffusion model within a variational autoencoder (VAE) crafted latent space. The key advantages of the proposed \modelname include
+(1) \generality: the ability to handle a broad spectrum of data types by converting them into a single unified space and explicitly capturing inter-column relations; 
+(2) \quality: optimizing the distribution of latent embeddings to enhance the subsequent training of diffusion models, which helps generate high-quality synthetic data, 
+(3) \speed: much fewer number of reverse steps and faster synthesis speed than existing diffusion-based methods. Extensive experiments on six datasets with five metrics demonstrate that \modelname outperforms existing methods. Specifically, it reduces the error rates by {\em 86\%} and {\em 67\%}  for column-wise distribution and pair-wise column correlation estimations compared with the most competitive baselines. The code has been made available at \url{https://github.com/amazon-science/tabsyn}. 
+\end{abstract}
+
+
+\input{Contents/1_introduction}
+\input{Contents/2_related_work}
+\input{Contents/3_methodology}
+\input{Contents/4_experiments}
+\input{Contents/5_conclusion}
+
+% \subsubsection*{Acknowledgments}
+% Use unnumbered third level headings for the acknowledgments. All
+% acknowledgments, including those to funding agencies, go at the end of the paper.
+
+
+\bibliography{ref}
+\bibliographystyle{iclr2024_conference}
+\input{Contents/appendix}
+
+\end{document}

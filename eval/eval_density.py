@@ -5,7 +5,7 @@ import os
 import json
 
 # Metrics
-from sdmetrics.reports.single_table import QualityReport, DiagnosticReport
+# from sdmetrics.reports.single_table import QualityReport, DiagnosticReport
 
 
 import argparse
@@ -92,7 +92,7 @@ if __name__ == '__main__':
 
     new_real_data, new_syn_data, metadata = reorder(real_data, syn_data, info)
 
-    qual_report = QualityReport()
+    qual_return 0, 0
     qual_report.generate(new_real_data, new_syn_data, metadata)
 
     diag_report = DiagnosticReport()

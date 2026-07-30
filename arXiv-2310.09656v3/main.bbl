@@ -1,0 +1,189 @@
+\begin{thebibliography}{36}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Alaa et~al.(2022)Alaa, Van~Breugel, Saveliev, and van~der Schaar]{faithful}
+Ahmed Alaa, Boris Van~Breugel, Evgeny~S Saveliev, and Mihaela van~der Schaar.
+\newblock How faithful is your synthetic data? sample-level metrics for evaluating and auditing generative models.
+\newblock In \emph{International Conference on Machine Learning}, pp.\  290--306. PMLR, 2022.
+
+\bibitem[Assefa et~al.(2021)Assefa, Dervovic, Mahfouz, Tillman, Reddy, and Veloso]{privacy}
+Samuel~A. Assefa, Danial Dervovic, Mahmoud Mahfouz, Robert~E. Tillman, Prashant Reddy, and Manuela Veloso.
+\newblock Generating synthetic data in finance: Opportunities, challenges and pitfalls.
+\newblock In \emph{Proceedings of the First ACM International Conference on AI in Finance}, ICAIF '20. Association for Computing Machinery, 2021.
+\newblock ISBN 9781450375849.
+
+\bibitem[Ba et~al.(2016)Ba, Kiros, and Hinton]{layer_norm}
+Jimmy~Lei Ba, Jamie~Ryan Kiros, and Geoffrey~E Hinton.
+\newblock Layer normalization.
+\newblock \emph{arXiv preprint arXiv:1607.06450}, 2016.
+
+\bibitem[Blattmann et~al.(2023)Blattmann, Rombach, Ling, Dockhorn, Kim, Fidler, and Kreis]{latent-video}
+Andreas Blattmann, Robin Rombach, Huan Ling, Tim Dockhorn, Seung~Wook Kim, Sanja Fidler, and Karsten Kreis.
+\newblock Align your latents: High-resolution video synthesis with latent diffusion models.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition}, pp.\  22563--22575, 2023.
+
+\bibitem[Borisov et~al.(2023)Borisov, Sessler, Leemann, Pawelczyk, and Kasneci]{great}
+Vadim Borisov, Kathrin Sessler, Tobias Leemann, Martin Pawelczyk, and Gjergji Kasneci.
+\newblock Language models are realistic tabular data generators.
+\newblock In \emph{The Eleventh International Conference on Learning Representations}, 2023.
+
+\bibitem[Chawla et~al.(2002)Chawla, Bowyer, Hall, and Kegelmeyer]{smote}
+Nitesh~V Chawla, Kevin~W Bowyer, Lawrence~O Hall, and W~Philip Kegelmeyer.
+\newblock Smote: synthetic minority over-sampling technique.
+\newblock \emph{Journal of artificial intelligence research}, 16:\penalty0 321--357, 2002.
+
+\bibitem[Chen \& Guestrin(2016)Chen and Guestrin]{xgboost}
+Tianqi Chen and Carlos Guestrin.
+\newblock Xgboost: A scalable tree boosting system.
+\newblock In \emph{Proceedings of the 22nd ACM SIGKDD Conference on Knowledge Discovery and Data Mining}, pp.\  785--794, 2016.
+
+\bibitem[Du \& Li(2024)Du and Li]{assess}
+Yuntao Du and Ninghui Li.
+\newblock Towards principled assessment of tabular data synthesis algorithms.
+\newblock \emph{arXiv preprint arXiv:2402.06806}, 2024.
+
+\bibitem[Esser et~al.(2021)Esser, Rombach, and Ommer]{vq-gan}
+Patrick Esser, Robin Rombach, and Bjorn Ommer.
+\newblock Taming transformers for high-resolution image synthesis.
+\newblock In \emph{Proceedings of the IEEE/CVF conference on computer vision and pattern recognition}, pp.\  12873--12883, 2021.
+
+\bibitem[Fonseca \& Bacao(2023)Fonseca and Bacao]{fonseca2023tabular}
+Joao Fonseca and Fernando Bacao.
+\newblock Tabular and latent space synthetic data generation: a literature review.
+\newblock \emph{Journal of Big Data}, 10\penalty0 (1):\penalty0 115, 2023.
+
+\bibitem[Goodfellow et~al.(2014)Goodfellow, Pouget-Abadie, Mirza, Xu, Warde-Farley, Ozair, Courville, and Bengio]{gan}
+Ian~J Goodfellow, Jean Pouget-Abadie, Mehdi Mirza, Bing Xu, David Warde-Farley, Sherjil Ozair, Aaron Courville, and Yoshua Bengio.
+\newblock Generative adversarial nets.
+\newblock In \emph{Proceedings of the 27th International Conference on Neural Information Processing Systems}, pp.\  2672--2680, 2014.
+
+\bibitem[Gorishniy et~al.(2021)Gorishniy, Rubachev, Khrulkov, and Babenko]{ft-transformer}
+Yury Gorishniy, Ivan Rubachev, Valentin Khrulkov, and Artem Babenko.
+\newblock Revisiting deep learning models for tabular data.
+\newblock In \emph{Proceedings of the 35th International Conference on Neural Information Processing Systems}, pp.\  18932--18943, 2021.
+
+\bibitem[Hernandez et~al.(2022)Hernandez, Epelde, Alberdi, Cilla, and Rankin]{privacy_health}
+Mikel Hernandez, Gorka Epelde, Ane Alberdi, Rodrigo Cilla, and Debbie Rankin.
+\newblock Synthetic data generation for tabular health records: A systematic review.
+\newblock \emph{Neurocomputing}, 493:\penalty0 28--45, 2022.
+
+\bibitem[Higgins et~al.(2016)Higgins, Matthey, Pal, Burgess, Glorot, Botvinick, Mohamed, and Lerchner]{beta-vae}
+Irina Higgins, Loic Matthey, Arka Pal, Christopher Burgess, Xavier Glorot, Matthew Botvinick, Shakir Mohamed, and Alexander Lerchner.
+\newblock beta-vae: Learning basic visual concepts with a constrained variational framework.
+\newblock In \emph{The Forth International Conference on Learning Representations}, 2016.
+
+\bibitem[Ho et~al.(2020)Ho, Jain, and Abbeel]{ddpm}
+Jonathan Ho, Ajay Jain, and Pieter Abbeel.
+\newblock Denoising diffusion probabilistic models.
+\newblock In \emph{Proceedings of the 34th International Conference on Neural Information Processing Systems}, pp.\  6840--6851, 2020.
+
+\bibitem[Hoogeboom et~al.(2021)Hoogeboom, Nielsen, Jaini, Forr{\'e}, and Welling]{multinominal_diffusion}
+Emiel Hoogeboom, Didrik Nielsen, Priyank Jaini, Patrick Forr{\'e}, and Max Welling.
+\newblock Argmax flows and multinomial diffusion: Learning categorical distributions.
+\newblock In \emph{Proceedings of the 35th International Conference on Neural Information Processing Systems}, pp.\  12454--12465, 2021.
+
+\bibitem[Karras et~al.(2022)Karras, Aittala, Aila, and Laine]{edm}
+Tero Karras, Miika Aittala, Timo Aila, and Samuli Laine.
+\newblock Elucidating the design space of diffusion-based generative models.
+\newblock In \emph{Proceedings of the 36th International Conference on Neural Information Processing Systems}, pp.\  26565--26577, 2022.
+
+\bibitem[Kim et~al.(2022)Kim, Lee, Shin, Park, Kim, Park, and Cho]{sos}
+Jayoung Kim, Chaejeong Lee, Yehjin Shin, Sewon Park, Minjung Kim, Noseong Park, and Jihoon Cho.
+\newblock Sos: Score-based oversampling for tabular data.
+\newblock In \emph{Proceedings of the 28th ACM SIGKDD Conference on Knowledge Discovery and Data Mining}, pp.\  762--772, 2022.
+
+\bibitem[Kim et~al.(2023)Kim, Lee, and Park]{stasy}
+Jayoung Kim, Chaejeong Lee, and Noseong Park.
+\newblock Stasy: Score-based tabular data synthesis.
+\newblock In \emph{The Eleventh International Conference on Learning Representations}, 2023.
+
+\bibitem[Kingma \& Ba(2015)Kingma and Ba]{adam}
+Diederik~P. Kingma and Jimmy Ba.
+\newblock Adam: {A} method for stochastic optimization.
+\newblock In \emph{International Conference on Learning Representations}, 2015.
+
+\bibitem[Kingma \& Welling(2013)Kingma and Welling]{vae}
+Diederik~P Kingma and Max Welling.
+\newblock Auto-encoding variational bayes.
+\newblock \emph{arXiv preprint arXiv:1312.6114}, 2013.
+
+\bibitem[Kotelnikov et~al.(2023)Kotelnikov, Baranchuk, Rubachev, and Babenko]{tabddpm}
+Akim Kotelnikov, Dmitry Baranchuk, Ivan Rubachev, and Artem Babenko.
+\newblock Tabddpm: Modelling tabular data with diffusion models.
+\newblock In \emph{International Conference on Machine Learning}, pp.\  17564--17579. PMLR, 2023.
+
+\bibitem[Lee et~al.(2023)Lee, Kim, and Park]{codi}
+Chaejeong Lee, Jayoung Kim, and Noseong Park.
+\newblock Codi: Co-evolving contrastive diffusion models for mixed-type tabular synthesis.
+\newblock In \emph{International Conference on Machine Learning}, pp.\  18940--18956. {PMLR}, 2023.
+
+\bibitem[Li et~al.(2022)Li, Mo, Shi, and Yan]{latent_gan}
+Yang Li, Yichuan Mo, Liangliang Shi, and Junchi Yan.
+\newblock Improving generative adversarial networks via adversarial learning in latent space.
+\newblock \emph{Advances in Neural Information Processing Systems}, 35:\penalty0 8868--8881, 2022.
+
+\bibitem[Liu et~al.(2023{\natexlab{a}})Liu, Chen, Yuan, Mei, Liu, Mandic, Wang, and Plumbley]{latent-audio}
+Haohe Liu, Zehua Chen, Yi~Yuan, Xinhao Mei, Xubo Liu, Danilo Mandic, Wenwu Wang, and Mark~D Plumbley.
+\newblock Audioldm: Text-to-audio generation with latent diffusion models.
+\newblock \emph{arXiv preprint arXiv:2301.12503}, 2023{\natexlab{a}}.
+
+\bibitem[Liu et~al.(2023{\natexlab{b}})Liu, Qian, Berrevoets, and van~der Schaar]{goggle}
+Tennison Liu, Zhaozhi Qian, Jeroen Berrevoets, and Mihaela van~der Schaar.
+\newblock Goggle: Generative modelling for tabular data by learning relational structure.
+\newblock In \emph{The Eleventh International Conference on Learning Representations}, 2023{\natexlab{b}}.
+
+\bibitem[Lugmayr et~al.(2022)Lugmayr, Danelljan, Romero, Yu, Timofte, and Van~Gool]{repaint}
+Andreas Lugmayr, Martin Danelljan, Andres Romero, Fisher Yu, Radu Timofte, and Luc Van~Gool.
+\newblock Repaint: Inpainting using denoising diffusion probabilistic models.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition}, pp.\  11461--11471, 2022.
+
+\bibitem[Razavi et~al.(2019)Razavi, van~den Oord, and Vinyals]{vq-vae-2}
+Ali Razavi, A{\"a}ron van~den Oord, and Oriol Vinyals.
+\newblock Generating diverse high-fidelity images with vq-vae-2.
+\newblock In \emph{Proceedings of the 33rd International Conference on Neural Information Processing Systems}, pp.\  14866--14876, 2019.
+
+\bibitem[Rombach et~al.(2022)Rombach, Blattmann, Lorenz, Esser, and Ommer]{ldm}
+Robin Rombach, Andreas Blattmann, Dominik Lorenz, Patrick Esser, and Bj{\"o}rn Ommer.
+\newblock High-resolution image synthesis with latent diffusion models.
+\newblock In \emph{Proceedings of the IEEE/CVF conference on computer vision and pattern recognition}, pp.\  10684--10695, 2022.
+
+\bibitem[Song et~al.(2021{\natexlab{a}})Song, Meng, and Ermon]{ddim}
+Jiaming Song, Chenlin Meng, and Stefano Ermon.
+\newblock Denoising diffusion implicit models.
+\newblock In \emph{The Ninth International Conference on Learning Representations}, 2021{\natexlab{a}}.
+
+\bibitem[Song et~al.(2021{\natexlab{b}})Song, Sohl-Dickstein, Kingma, Kumar, Ermon, and Poole]{vp}
+Yang Song, Jascha Sohl-Dickstein, Diederik~P Kingma, Abhishek Kumar, Stefano Ermon, and Ben Poole.
+\newblock Score-based generative modeling through stochastic differential equations.
+\newblock In \emph{The Ninth International Conference on Learning Representations}, 2021{\natexlab{b}}.
+
+\bibitem[Vahdat et~al.(2021)Vahdat, Kreis, and Kautz]{sgm}
+Arash Vahdat, Karsten Kreis, and Jan Kautz.
+\newblock Score-based generative modeling in latent space.
+\newblock In \emph{Proceedings of the 35th International Conference on Neural Information Processing Systems}, pp.\  11287--11302, 2021.
+
+\bibitem[van~den Oord et~al.(2017)van~den Oord, Vinyals, and Kavukcuoglu]{vq-vae}
+Aaron van~den Oord, Oriol Vinyals, and Koray Kavukcuoglu.
+\newblock Neural discrete representation learning.
+\newblock In \emph{Proceedings of the 31st International Conference on Neural Information Processing Systems}, pp.\  6309--6318, 2017.
+
+\bibitem[Wu et~al.(2023)Wu, Yang, Zhao, He, Wipf, and Yan]{difformer}
+Qitian Wu, Chenxiao Yang, Wentao Zhao, Yixuan He, David Wipf, and Junchi Yan.
+\newblock Difformer: Scalable (graph) transformers induced by energy constrained diffusion.
+\newblock In \emph{The Eleventh International Conference on Learning Representations}, 2023.
+
+\bibitem[Xu et~al.(2019)Xu, Skoularidou, Cuesta-Infante, and Veeramachaneni]{ctgan}
+Lei Xu, Maria Skoularidou, Alfredo Cuesta-Infante, and Kalyan Veeramachaneni.
+\newblock Modeling tabular data using conditional gan.
+\newblock In \emph{Proceedings of the 33rd International Conference on Neural Information Processing Systems}, pp.\  7335–7345, 2019.
+
+\bibitem[Zheng \& Charoenphakdee(2022)Zheng and Charoenphakdee]{TabCSDI}
+Shuhan Zheng and Nontawat Charoenphakdee.
+\newblock Diffusion models for missing value imputation in tabular data.
+\newblock \emph{arXiv preprint arXiv:2210.17128}, 2022.
+
+\end{thebibliography}

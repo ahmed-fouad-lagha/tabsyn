@@ -1,0 +1,724 @@
+\newpage
+\appendix
+
+\section{Algorithms}\label{appendix:algorithm}
+In this section, we provide an algorithmic illustration of the proposed \modelname. Algorithm~\ref{algorithm:vae} and Algorithm~\ref{algorithm:diffusion} present the algorithms of the VAE and Diffusion phases of the training process of \modelname, respectively. Algorithm~\ref{algorithm:sampling} presents \modelname's sampling algorithm.
+
+\begin{minipage}[t]{0.48\textwidth}
+\vspace{0pt}
+\begin{algorithm}[H]
+    \centering
+    \caption{\modelname: Training of VAE}\label{algorithm:vae}
+    \begin{algorithmic}[1]
+        \STATE Sample $ \vz = (\vz^{\num}, \vz^{\cat}) \sim p(\gT)$
+        \STATE Get tokenized feature $\ve$ via Eq.~\ref{eqn:tokenizer}
+        \STATE Get $\bm{\mu}$ and $\log\bm{\sigma}$ via VAE's Transformer encoder
+        \STATE Reparameterization: $\hat{\vz} = \bm{\mu} + \bm{\varepsilon} \cdot \bm{\sigma}$, where $\bm{\varepsilon} \sim \gN(\bm{0}, \mI)$ 
+        \STATE Get $\hat{\ve}$ via VAE's Transformer decoder
+        \STATE Get detokenized feature $\hat{\vz}$ via Eq.~\ref{eqn:detokenizer}
+        \STATE Calculate loss $\gL = \ell_{\rm recon}(\vz, \hat{\vz}) + \beta \ell_{\rm kl} (\bm{\mu}, \bm{\sigma}) $
+        \STATE Update the network parameter via Adam optimizer
+        \IF{$\ell_{\rm recon}$ fails to decrease for $S$ steps}
+        \STATE $\beta \leftarrow \lambda\beta$ 
+        \ENDIF
+    \end{algorithmic}
+\end{algorithm}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\begin{algorithm}[H]
+    \centering
+    \caption{\modelname: Training of Diffusion}\label{algorithm:diffusion}
+    \begin{algorithmic}[1]
+         \STATE Sample the embedding $\vz_0$ from $p(\vz) = p(\bm{\mu})$
+        \STATE Sample time steps $t$ from $p(t)$ then get $\sigma (t)$
+        \STATE Sample noise vectors ${\bm{\varepsilon}} \sim \gN(\bm{0}, \sigma_i^2 \mI)$
+        \STATE Get perturbed data ${\vz}_{t} = \vz_0 + {\bm{\varepsilon}}$
+        \STATE Calculate loss $\ell(\theta) =  \| \bm{\epsilon}_{\theta}(\vz_t, t)-\bm{\varepsilon}\|_2^2$
+        \STATE Update the network parameter $\theta$ via Adam optimizer
+    \end{algorithmic}
+\end{algorithm}
+\end{minipage}
+
+\begin{algorithm}[H]
+    \centering
+    \caption{\modelname: Sampling}\label{algorithm:sampling}
+    \begin{algorithmic}[1]
+        \STATE Sample $\vz_{{T}} \sim \gN(\bm{0}, \sigma^2({T})\mI), t_{\rm max} = T$
+        \FOR{$i = \max, \cdots, 1$}
+        \STATE $\nabla_{\vz_{t_i}}\log p(\vz_{t_i}) = -\bm{\epsilon}_{\theta}(\vz_{t_i}, {t_i}) / \sigma({t_i})$
+        \STATE get $\vz_{t_{i-1}}$ via solving the SDE in Eq.~\ref{eqn:reverse}.
+        \ENDFOR
+        \STATE Put $\vz_0$ as input of the VAE's Transformer decoder, then acquire $\hat{\ve}$
+        \STATE Get detokenized feature $\hat{\vz}$ via Eq.~\ref{eqn:detokenizer}
+        \STATE $\hat{\vz}$ is the sampled synthetic data
+    \end{algorithmic}
+\end{algorithm}
+
+\section{Diffusion Models Basics}\label{appendix:diffusion}
+Diffusion models are often presented as a pair of two processes. 
+\begin{itemize}
+    \item A fixed forward process governs the training of the model, which adds Gaussian noises of increasing scales to the original data.
+    \item A corresponding backward process involves utilizing the trained model iteratively to denoise the samples starting from a fully noisy prior distribution.
+\end{itemize}
+
+\subsection{Forward Process}
+Although there are different mathematical formulations (discrete or continuous) of the diffusion model, ~\citet{vp} provides a unified formulation via the Stochastic Differential Equation (SDE) and defines the forward process of Diffusion as (note that in this paper, the independent variable is denoted as $\vz$)
+\begin{equation}\label{eqn:diffusion-forward}
+    {\rm d} \vz =  \vf(\vz, t){\rm d}t + g(t) \; {\rm d} \vw_t,
+\end{equation}
+where $\vf(\cdot)$ and $g(\cdot)$ are the drift and diffusion coefficients and are selected differently for different diffusion processes, e.g., the variance preserving (VP) and variance exploding (VE) formulations. $\bm{\omega}_t$ is the standard Wiener process. Usually, $f(\cdot)$ is of the form $\vf(\vz, t)  = f(t) \; \vz $. Thus, the SDE can be equivalently written as
+\begin{equation}
+    {\rm d} \vz = f(t)\; \vz \; {\rm d}t + g(t) \; {\rm d}\vw_t.
+\end{equation}
+
+Let $\vz$ be a function of the time $t$, i.e., $\vz_t = \vz(t)$, then the conditional distribution of $\vz_t$ given $\vz_0$ (named as the perturbation kernel of the SDE) could be formulated as:
+\begin{equation}\label{eqn:kernel}
+    p(\vz_t | \vz_0) = \gN(\vz_t; s(t)\vz_0, s^2(t) \sigma^2(t) \mI),
+\end{equation}
+where
+\begin{equation}
+    s(t) = \exp \left(\int_0^t f(\xi){\rm d}\xi \right), \; \mbox{and} \; \sigma(t) = \sqrt{\int_0^t \frac{g^2(\xi)}{s^2(\xi)} {\rm d} \xi}.
+\end{equation}
+Therefore, the forward diffusion process could be equivalently formulated by defining the perturbation kernels (via defining appropriate $s(t)$ and $\sigma(t)$).
+
+Variance Preserving (VP) implements the perturbation kernel Eq.~\ref{eqn:kernel} by setting $s(t) = \sqrt{1-\beta(t)}$, and  $\sigma(t) = \sqrt{\frac{\beta(t)}{1-\beta(t)}}$ ($s^2(t) + s^2(t)\sigma^2(t) = 1$). Denoising Diffusion Probabilistic Models (DDPM,~\citet{ddpm}) belong to VP-SDE by using discrete finite time steps and giving specific functional definitions of $\beta(t)$.
+
+Variance Exploding (VE) implements the perturbation kernel  Eq.~\ref{eqn:kernel} by setting $s(t) = 1$, indicating that the noise is directly added to the data rather than weighted mixing. Therefore, The noise variance (the noise level) is totally decided by $\sigma(t)$. The diffusion model used in \modelname belongs to VE-SDE, but we use linear noise level (i.e., $\sigma(t) = t$) rather than $\sigma(t) = \sqrt{t}$ in the vanilla VE-SDE~\citep{vp}. When $s(t) = 1$, the perturbation kernels become:
+\begin{equation}
+    p(\vz_t|\vz_0) = \gN(\vz_t; \bm{0}, \sigma^2(t)\mI) \; \Rightarrow  \; \vz_t = \vz_0 + \sigma(t)\bm{\varepsilon},
+\end{equation}
+which aligns with the forward diffusion process in Eq.~\ref{eqn:forward}.
+
+\subsection{Reverse Process}
+The sampling process of diffusion models is defined by a corresponding reverse SDE:
+\begin{equation}\label{eqn:cond-sampling}
+    {\rm d} \vz  = [\vf(\vz, t) - g^2(t) \nabla_{\vz}\log p_t(\vz)] {\rm d}t  + g(t) {\rm d} \vw_t.
+\end{equation}
+For VE-SDE, $s(t) = 1 \Leftrightarrow \vf(\vz, t) = f(t)\cdot \vz = \bm{0}$, and 
+\begin{equation}
+\begin{split}
+    & \sigma(t)  = \sqrt{\int_0^t g^2(\xi) {\rm d} \xi} \Rightarrow \int_0^t g^2(\xi) {\rm d} \xi = \sigma^2(t),  \\
+    & g^2(t) = \frac{{\rm d} \sigma^2(t) }{ {\rm d} t} = 2\sigma(t)\dot{\sigma}(t), \\
+    & g(t) = \sqrt{2\sigma(t) \dot{\sigma}(t)}.
+\end{split}
+\end{equation}
+Plugging $g(t)$ into Eq.~\ref{eqn:cond-sampling}, the reverse process in Eq.~\ref{eqn:reverse} is recovered:
+\begin{equation}
+    {\rm d}\vz = -2\sigma(t)\dot{\sigma}(t)\nabla_{\vz} \log p_t(\vz) {\rm d}t + \sqrt{2\sigma(t) \dot{\sigma}(t)} {\rm d} \bm{\omega}_t.
+\end{equation}
+
+\subsection{Training}
+
+As $\vf(\vz, t), g(t), \vw_t$ are all known, if $\nabla_{\vz}\log p_t(\vz)$ (named the score function) is also available, we can sample synthetic data via the reverse process from random noises. Diffusion models train a neural network (named the denoising function) $D_{\theta}(\vz_t, t)$ to approximate $\nabla_{\vz}\log p_t(\vz)$. However,  $\nabla_{\vz}\log p_t(\vz)$ itself is intractable, as the marginal distribution $p_t(\vz) = p(\vz_t)$ is intractable. Fortunately, the conditional distribution $p(\vz_t|\vz_0)$ is tractable. Therefore, we can train the denoising function to approximate the conditional score function instead $\nabla_{\vz_t}\log p(\vz_t|\vz_0)$, and the training process is called denoising score matching:
+\begin{equation}\label{eqn:cond-score-matching}
+    \min \sE_{\vz_0 \sim p(\vz_0)} \sE_{\vz_t \sim p(\vz_t|\vz_0)} \Vert D_{\theta}(\vz_t, t) - \nabla_{\vz_t}\log p(\vz_t|\vz_0) )\Vert_2^2, 
+\end{equation}
+where $\nabla_{\vz}\log p(\vz_t|\vz_0)$ has analytical solution according to Eq.~\ref{eqn:kernel}:
+\begin{equation}
+\begin{split}
+    \nabla_{\vz_t}\log p(\vz_t|\vz_0)  & = \frac{1}{p(\vz_t|\vz_0)} \nabla_{\vz_t} p(\vz_t|\vz_0) \\
+    & = \frac{1}{p(\vz_t|\vz_0)} \cdot (- \frac{1}{s^2(t)\sigma^2(t)}(\vz_t - s(t)\vz_0))\cdot p(\vz_t|\vz_0) \\
+    & = - \frac{1}{s^2(t)\sigma^2(t)}(\vz_t - s(t)\vz_0) \\
+    & = - \frac{1}{s^2(t)\sigma^2(t)}\left(s(t)\vz_0 + s(t)\sigma(t)\bm{\varepsilon} - s(t)\vz_0 \right) \\
+    & = - \frac{\bm{\varepsilon}}{s(t)\sigma(t)}.
+\end{split}
+\end{equation}
+Therefore, Eq.~\ref{eqn:cond-score-matching} becomes
+\begin{equation}
+\begin{split}
+        \min \sE_{\vz_0 \sim p(\vz_0)} & \sE_{\vz_t \sim p(\vz_t|\vz_0)} \Vert D_{\theta}(\vz_t, t) + \frac{\bm{\varepsilon}}{s(t)\sigma(t)} \Vert_2^2 \\
+        \Rightarrow  \min \sE_{\vz_0 \sim p(\vz_0)} & \sE_{\vz_t \sim p(\vz_t|\vz_0)}  \Vert \bm{\epsilon}_{\theta}(\vz_t, t) - {\bm{\varepsilon}} \Vert_2^2, \\
+\end{split}
+\end{equation}
+where $D_\theta(\vz_t, t) = -\frac{\bm{\epsilon}_{\theta}(\vz_t, t)}{s(t)\sigma(t)}$. After the training ends, sampling is enabled by solving Eq.~\ref{eqn:cond-sampling} (replacing $\nabla_{\vz}\log p_t(\vz)$ with $D_\theta(\vz_t, t)$).
+
+\section{Proofs}\label{appendix:proof}
+\subsection{Proof for Proposition~\ref{prop:linear}}
+We first introduce Lemma~\ref{lemma:ode} (from \citep{edm}), which introduces a family of SDEs sharing the same solution trajectories with different forwarding processes:
+\begin{lemma}\label{lemma:ode}
+    Let $g(t)$ be a free parameter functional of $t$, and the following family of (forward) SDEs have the same marginal distributions of the solution trajectories with noise levels $\sigma(t)$ for any choice of $g(t)$:
+    \begin{equation}\label{eqn:sde-family}
+        {\rm d} \vz = \left(\frac{1}{2}g^2(t) - \dot{\sigma}(t)\sigma(t) \right) \nabla_{\vz} \log p (\vz; \sigma(t)) {\rm d} t + g(t) {\rm d} \omega_t.
+    \end{equation}
+\end{lemma}
+The reverse family of SDEs of Eq.~\ref{eqn:sde-family} is given by changing the sign of the first term:
+\begin{equation}\label{eqn:sde-family-reverse}
+        {\rm d} \vz = - \frac{1}{2}g^2(t)\nabla_{\vz} \log p (\vz; \sigma(t) - \dot{\sigma}(t)\sigma(t)  \nabla_{\vz} \log p (\vz; \sigma(t)) {\rm d} t + g(t) {\rm d} \omega_t.
+\end{equation}
+Lemma~\ref{lemma:ode} indicates that for a specific (forward) SDE following Eq.~\ref{eqn:sde-family}, we can obtain its solution trajectory by solving Eq.~\ref{eqn:sde-family-reverse} of any $g(t)$. 
+
+Since our forwarding diffusion process (Eq.~\ref{eqn:forward}) lets $g(t) = \sqrt{2\dot{\sigma}(t)\sigma(t)}$ (see derivations in Appendix~\ref{appendix:diffusion}), its solution trajectory can be solved via letting $g(t) = 0$ in Eq.~\ref{eqn:sde-family-reverse}:
+\begin{equation}\label{eqn:reverse-ode}
+\begin{split}
+       {\rm d} \vz = - \dot{\sigma}(t)\sigma(t)  \nabla_{\vz} \log p (\vz; \sigma(t) ){\rm d} t, \\
+        \frac{{\rm d} \vz}{ {\rm d} t } =  - \dot{\sigma}(t)\sigma(t)  \nabla_{\vz} \log p (\vz; \sigma(t)). \\ 
+\end{split}
+\end{equation}
+Eq.~\ref{eqn:reverse-ode} is usually named the Probability-Flow ODE, since it depicts a deterministic reverse process without noise terms. Based on Lemma~\ref{lemma:ode}, we can study the solution of Eq.~\ref{eqn:reverse} using Eq.~\ref{eqn:reverse-ode}.
+
+To prove Proposition~\ref{prop:linear}, we only have to study the absolute error between the ground-truth $\vz_{t-\Delta t}$ the approximated one by solving Eq.~\ref{eqn:reverse} from $\vz_t$, where $\Delta t \rightarrow 0$:
+\begin{equation}
+    \Vert {\vz}_{t-\Delta t}  - \vz_{t - \Delta t}^{\text{Euler}} \Vert.
+\end{equation}
+
+Since $\vz_t = \vz_0 + \sigma(t) \bm{\varepsilon}$, there is $\vz_{t-\Delta t} = \vz_t - \bm{\varepsilon} \cdot  (\sigma (t) - \sigma(t-\Delta t) )$.
+
+The solution of $\vz_{t-\Delta t}$ from $\vz_t$ can be obtained using 1st-order Euler method:
+\begin{equation}
+\begin{split}
+    \vz_{t - \Delta t}^{\text{Euler}}  & \approx \vz_t - \Delta t \frac{{\rm d}\vz_t }{ {\rm d} t} \\
+    & = \vz_t + \Delta t \; \dot{\sigma}(t)\sigma(t) \nabla_{\vz_t} \log p(\vz_t)  \\
+    & = \vz_t + \Delta t \; \dot{\sigma}(t)\sigma(t) (-\bm{\epsilon}_{\theta}(\vz_t, t) / \sigma(t)) \\
+    & = \vz_t - \dot{\sigma}(t) \bm{\epsilon}_{\theta}(\vz_t, t) \Delta t \\
+    & = \vz_t - \dot{\sigma}(t) \bm{\varepsilon} \Delta t,
+\end{split}
+\end{equation}
+
+\begin{equation}
+\begin{split}
+    \Vert {\vz}_{t-\Delta t}  - \vz_{t - \Delta t}^{\text{Euler}} \Vert & = \bm{\varepsilon} \cdot (\sigma (t) - \sigma(t-\Delta t) ) -  \dot{\sigma}(t) \bm{\varepsilon} \Delta t \\
+    & =  \bm{\varepsilon} \cdot (\sigma (t) - \sigma(t-\Delta t) - \dot{\sigma}(t) \Delta t  ) .
+\end{split}
+\end{equation}
+Specifically, if $\sigma(t) = t, \dot{\sigma}(t) = 1$, there is
+\begin{equation}
+    \Vert {\vz}_{t-\Delta t}  - \vz_{t - \Delta t}^{\text{Euler}} \Vert = \bm{0}.
+\end{equation}
+Comparably, setting $\sigma(t) = \sqrt{t}$ (as in VE-SDE~\cite{vp}) leads to
+\begin{equation}
+    \Vert {\vz}_{t-\Delta t}  - \vz_{t - \Delta t}^{\text{Euler}} \Vert = | \bm{\epsilon} (\sqrt{t} - \sqrt{t-\Delta t} - \frac{\Delta t}{2\sqrt{t}}) |  \ge \bm{0}.
+\end{equation}
+
+Therefore, the proof is complete.
+
+\section{Network Architectures}\label{appendix:architecture}
+\subsection{Architectures of VAE}\label{appendix:vae}
+In Sec.~\ref{sec:vae}, we introduce the general architecture of our VAE module, which consists of a tokenizer, a Transformer encoder, a Transformer decoder, and a detokenizer. Figure~\ref{fig:architecture-vae} is a detailed illustration of the architectures of the Transformer encoder and decoder.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width = 1.0\linewidth]{Fig/VAE.pdf} 
+    \caption{Architectures of VAE's Encoder and Decoder. Both the encoder and decoder are implemented as a two-layer Transformer of identical architectures.}
+    \label{fig:architecture-vae}
+\end{figure}
+
+The VAE's encoder takes the tokenizer's output $\mE \in \sR^{M \times d} $ as input. As we are using the Variational AutoEncoder, the encoder module consists of a $\mu$ encoder and a $\log \sigma$ encoder of the same architecture. Each encoder is implemented as a two-layer Transformer, each with a Self-Attention (without multi-head) module and a Feed Forward Neural Network (FFNN). The FFNN used in \modelname is a simple two-layer MLP with ReLU activation(the input of the FFNN is denoted by $\mH_0$):
+\begin{equation}
+\begin{split}
+    \mH_1 & = \texttt{ReLU}(\texttt{FC} (\mH_0)) \in \sR^{M \times D}, \\
+    \mH_2 & = \texttt{FC} (\mH_1), \in \sR^{M \times d}, \\
+\end{split}
+\end{equation}
+where $\texttt{FC}$ denotes the fully-connected layer, and $D$ is FFNN's hidden dimension. In this paper, we set $d = 4$ and $D = 128$ for all datasets. "Add \& Norm" in Figure~\ref{fig:architecture-vae} denotes residual connection and Layer Normalization~\citep{layer_norm}, respectively.
+
+The VAE encoder outputs two matrixes: mean matrix $\bm{\mu} \in \sR^{M \times d} $ and log standard deviation matrix $ \log \bm{\sigma} \in \sR^{M \times d}$. Then, the latent variables are obtained via the parameterization trick:
+\begin{equation}
+    \mZ = \bm{\mu} + \bm{\sigma}\cdot \bm{\varepsilon}, \bm{\varepsilon} \sim \gN(\bm{0}, \mI).
+\end{equation}
+
+The VAE's decoder is another two-layer Transformer of the same architecture as the encoder, and it takes $\mZ$ as input. The decoder is expected to output $\hat{\mE} \in \sR^{M \times d}$ for the detokenizer.
+
+\subsection{Architectures of Denoising MLP}\label{appendix:mlp}
+In Figure~\ref{fig:architecture-vae}, we present the architecture of the denoising neural networks $\bm{\varepsilon}_{\theta}(\vz_t, t)$ in Eq.~\ref{eqn:denosing}, which is a simple MLP of the similar architecture as used in TabDDPM~\citep{tabddpm}.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width = 0.8\linewidth]{Fig/mlp.pdf} 
+    \caption{Architectures of denoising function $\bm{\varepsilon}_{\theta}(\vz_t, t)$. The denoising function is a 5-layer MLP with SiLU activations. $t_{\rm emb}$ is the sinusoidal timestep embeddings.}
+    \label{fig:architecture-mlp}
+\end{figure}
+
+The denoising MLP takes the current time step $t$ and the corresponding latent vector $\vz_t \in \sR^{1\times Md}$ as input. First, $\vz_t$ is fed into a linear projection layer that converts the vector dimension to be $d_{\rm hidden}$:
+\begin{equation}
+    \vh_0 = \texttt{FC}_{\rm in}(\vz_t) \in \sR^{1\times d_{\rm hidden}},
+\end{equation}
+where $\vh_0$ is the transformed vector, and $d_{\rm hidden}$ is the output dimension of the input layer.
+
+Then, following the practice in TabDDPM~\citep{tabddpm}, the sinusoidal timestep embeddings $\vt_{\rm emb} \in \sR^{1\times d_{\rm hidden}}$  
+is added to $\vh_0$ to obtain the input vector $\vh_{\rm hidden}$:
+\begin{equation}
+    \vh_{\rm in} =  \vh_0 + \vt_{\rm emb}.
+\end{equation}
+
+The hidden layers are three fully connected layers of the size $d_{\rm hidden} - 2*d_{\rm hidden} - 2*d_{\rm hidden} - d_{\rm hidden}$, with SiLU activation functions (in consistency with TabDDPM~\citep{tabddpm}): 
+\begin{equation}
+\begin{split}
+    \vh_1 & = \texttt{SiLU}(\texttt{FC}_{1}(\vh_0) \in \sR^{1\times 2*d_{\rm hidden}}), \\
+    \vh_2 & = \texttt{SiLU}(\texttt{FC}_{2}(\vh_1) \in \sR^{1\times 2*d_{\rm hidden}}), \\
+    \vh_3 & = \texttt{SiLU}(\texttt{FC}_{3}(\vh_2) \in \sR^{1\times d_{\rm hidden}}). \\
+\end{split}
+\end{equation}
+The estimated score is obtained via the last linear layer:
+\begin{equation}
+      \bm{\varepsilon}_{\theta}(\vz_t, t) =  \vh_{\rm out} = \texttt{FC}_{\rm out}(\vh_3) \in \sR^{1\times d_{\rm in}}.
+\end{equation}
+Finally, $\bm{\varepsilon}_{\theta}(\vz_t, t)$ is applied to Eq.~\ref{eqn:denosing} for model training.
+
+\section{Details of Experimental Setups}\label{appendix:experiments}
+We implement \modelname and all the baseline methods with PyTorch. All the methods are optimized with Adam~\citep{adam} optimizer. All the experiments are conducted on an Nvidia RTX 4090 GPU with 24G memory.
+
+\subsection{Datasets}\label{appendix:dataset}
+We use $6$ tabular datasets from UCI Machine Learning Repository\footnote{\url{https://archive.ics.uci.edu/datasets}}: Adult, Default, Shoppers, Magic, Beijing, and News, where each tabular dataset is associated with a machine-learning task. Classification: Adult, Default, Magic, and Shoppers. Regression: Beijing and News. The statistics of the datasets are presented in Table~\ref{tbl:exp-dataset}.
+\begin{table}[h] 
+    \centering
+    \caption{Statistics of datasets. \# Num stands for the number of numerical columns, and \# Cat stands for the number of categorical columns.} 
+    \label{tbl:exp-dataset}
+    \small
+    \begin{threeparttable}
+    {
+    \scalebox{1.0}
+    {
+	\begin{tabular}{lcccccccc}
+            \toprule[0.8pt]
+            \textbf{Dataset} & \# Rows  & \# Num & \# Cat & \# Train & \# Validation & \# Test & Task  \\
+            \midrule 
+            \textbf{Adult} & $48,842$ & $6$ & $9$ & $28,943$ & $3,618$ & $16,281$ & Classification  \\
+            \textbf{Default} & $30,000$ & $14$ & $11$ & $24,000$ & $3,000$ & $3,000$ & Classification   \\
+            \textbf{Shoppers} & $12,330$ & $10$ & $8$ & $9,864$   & $1,233$ & $1,233$ & Classification   \\
+            \textbf{Magic} & $19,019$ & $10$ & $1$ & $15,215$  & $1,902$ & $1,902$ & Classification  \\
+            \textbf{Beijing} & $43,824$ & $7$ & $5$ & $35,058$  & $4,383$ & $4,383$ &  Regression   \\
+            \textbf{News} & $39,644$ & $46$ & $2$ & $31,714$  & $3,965$ & $3,965$ & Regression \\
+		\bottomrule[1.0pt] 
+		\end{tabular}
+   }
+  }        
+  \end{threeparttable}
+\end{table}
+
+In Table~\ref{tbl:exp-dataset}, \# Rows denote the number of rows (records) in the table. \# Num and \# Cat denote the number of numerical features and categorical features, respectively. Note that the target column is counted as either a numerical or a categorical feature, depending on the task type. Specifically, the target column belongs to the categorical column if the task is classification; otherwise, it is a numerical column. Each dataset is split into training, validation, and testing sets for the Machine Learning Efficiency experiments. As Adult has its official testing set, we directly use it as the testing set. The original training set of Adult is further split into training and validation split with the ratio $8:1$. The remaining datasets are split into training/validation/testing sets with the ratio $8:1:1$ with a fixed seed.
+
+Below is a detailed introduction to each dataset:
+\begin{itemize}
+    \item \textbf{Adult}\footnote{\url{https://archive.ics.uci.edu/dataset/2/adult}}: The "\textbf{Adult} Census Income" dataset contains the demographic and employment-related features people.  The task is to predict whether an individual's income exceeds $50,000$.
+    \item \textbf{Default}\footnote{\url{https://archive.ics.uci.edu/dataset/350/default+of+credit+card+clients}}: The "\textbf{Default} of Credit Card Clients Dataset" dataset contains information on default payments, demographic factors, credit data, history of payment, and bill statements of credit card clients in Taiwan from April 2005 to September 2005. The task is to predict whether the client will default payment next month.
+    \item \textbf{Shoppers}\footnote{\url{https://archive.ics.uci.edu/dataset/468/online+shoppers+purchasing+intention+dataset}}: The "Online \textbf{Shoppers} Purchasing Intention Dataset" contains information of user's webpage visiting sessions. The task is to predict if the user's session ends with the shopping behavior.
+    \item \textbf{Magic}\footnote{\url{https://archive.ics.uci.edu/dataset/159/magic+gamma+telescope}}: The "\textbf{Magic} Gamma Telescope" dataset is to simulate registration of high energy gamma particles in a ground-based atmospheric Cherenkov gamma telescope using the imaging technique. The task is to classify high-energy Gamma particles in the atmosphere.
+    \item \textbf{Beijing}\footnote{\url{https://archive.ics.uci.edu/dataset/381/beijing+pm2+5+data}}: The "\textbf{Beijing} PM2.5 Data" dataset contains the hourly PM2.5 data of US Embassy in Beijing and the meteorological data from Beijing Capital International Airport. The task is to predict the PM2.5 value.
+    \item \textbf{News}\footnote{\url{https://archive.ics.uci.edu/dataset/332/online+news+popularity}}: The "Online \textbf{News} Popularity" dataset contains a heterogeneous set of features about articles published by Mashable in two years. The goal is to predict the number of shares in social networks (popularity).
+\end{itemize}
+
+\subsection{Baselines}\label{appendix:baseline}
+In this section, we introduce and compare the properties of the baseline methods used in this paper. 
+
+\begin{itemize}
+    \item \textbf{CTGAN} and \textbf{TVAE} are two methods for synthetic tabular data generation proposed in one paper~\citep{ctgan}, using the same techniques proposed but based on different basic generative models -- \textbf{GAN} for CTGAN while \textbf{VAE} for TVAE. The two methods contain two important designs: 1) Mode-specific Normalization to deal with numerical columns with complicated distributions. 2) Conditional Generation of numerical columns based on categorical columns to deal with class imbalance problems. 
+    \item \textbf{GOGGLE}~\citep{goggle} is a recently proposed synthetic tabular data generation model based on \textbf{VAE}. The primary motivation of GOGGLE is that the complicated relationships between different columns are hardly exploited by previous literature. Therefore, it proposes to learn a graph adjacency matrix to model the dependency relationships between different columns. The encoder and decoder of the VAE model are both implemented as Graph Neural Networks (GNNs), and the graph adjacent matrix is jointly optimized with the GNNs parameters.
+    \item \textbf{GReaT}~\citep{great} treats a row of tabular data as a sentence and applies the Auto-regressive GPT model to learn the sentence-level row distributions. GReaT involves a well-designed serialization process to transform a row into a natural language sentence of a specific format and a corresponding deserialization process to transform a sentence back to the table format. To ensure the permutation invariant property of tabular data, GReaT shuffles each row several times before serialization. 
+    \item \textbf{STaSy}~\citep{stasy} is a recent diffusion-based model for synthetic tabular data generation. STaSy treats the one-hot encoding of categorical columns as continuous features, which are then processed together with the numerical columns. STaSy adopts the VP/VE SDEs from ~\citet{vp} as the diffusion process to learn the distribution of tabular data. STaSy further proposes several training strategies, including self-paced learning and fine-tuning, to stabilize the training process, increasing sampling quality and diversity.
+    \item \textbf{CoDi}~\citep{codi} proposes to utilize two diffusion models for numerical and categorical columns, respectively. For numerical columns, it uses the DDPM~\citep{ddpm} model with Gaussian noises. For categorical columns, it uses the multinominal diffusion model~\citep{multinominal_diffusion} with categorical noises. The two diffusion processes are inter-conditioned on each other to model the joint distribution of numerical and categorical columns. In addition, CoDi adopts contrastive learning methods to further bind the two diffusion methods.
+    \item \textbf{TabDDPM}~\citep{tabddpm}. Like CoDi, TabDDPM introduces two diffusion processes: DDPM with Gaussian noises for numerical columns and multinominal diffusion with categorical noises for categorical columns. Unlike CoDi, which introduces many additional techniques, such as co-evolved learning via inter-conditioning and contrastive learning, TabDDPM concatenates the numerical and categorical features as input and output of the denoising function (an MLP). Despite its simplicity, our experiments have shown that TabDDPM performs even better than CoDi.
+\end{itemize}
+
+We further compare the properties of these baseline methods and the proposed \modelname in Table~\ref{tbl:salesman}. The compared properties include: 1) \textbf{Compatibility}: if the method can deal with mixed-type data columns, e.g., numerical and categorical. 2) \textbf{Robustness}: if the method has stable performance across different datasets (measured by the standard deviation of the scores ($\le 10\% $ or not) on different datasets (from Table~\ref{tbl:exp-shape} and Table~\ref{tbl:exp-trend}). 3) \textbf{Quality}: Whether the synthetic data can pass column-wise Chi-Squared Test ($p \ge 0.95$). 4) \textbf{Efficiency}: Each method can generate synthetic tabular data of satisfying quality within less than $20$ steps. 
+\begin{table}[h] 
+    \centering
+    \caption{A comparison of the properties of different generative models for tabular data. \textit{Base model} denotes the base generative model type: Generative Adversarial Networks (GAN), Variational AutoEncoders (VAE), Auto-Regressive Language Models (AR), and Diffusion.} 
+    \label{tbl:salesman}
+    \small
+    {
+    \scalebox{1.0}
+    {
+	\begin{tabular}{lcccccccc}
+            \toprule[0.8pt]
+            \textbf{Method} & \textbf{Base Model} & \textbf{Compatibility} & \textbf{Robustness} &  \textbf{Quality} &  \textbf{Efficiency} &  \\
+            \midrule 
+            CTGAN & GAN & \tickYes & \tickNo & \tickNo & \tickYes     \\
+            TVAE & VAE & \tickYes & \tickYes & \tickNo & \tickYes   \\
+            GOGGLE  & VAE & \tickNo & \tickNo & \tickNo & \tickYes  \\
+            GReaT & AR & \tickYes & \tickNo & \tickNo & \tickNo   \\
+            STaSy & Diffusion & \tickNo & \tickYes & \tickYes & \tickNo  \\
+            CoDi & Diffusion & \tickYes & \tickNo & \tickNo & \tickNo  \\
+            TabDDPM  & Diffusion & \tickYes & \tickNo & \tickYes & \tickNo \\
+            \midrule
+            \modelname & Diffusion & \tickYes & \tickYes & \tickYes & \tickYes  \\
+		\bottomrule[1.0pt] 
+		\end{tabular}
+  }
+  }
+	% \end{threeparttable}
+\end{table}
+
+
+\subsection{Metrics of Low-order Statistics}\label{appendix:metric}
+In this section, we give a detailed introduction of the metrics used in Sec.~\ref{sec:exp-low-order}.
+\subsubsection{Column-wise Density Estimation}
+
+\textit{Kolmogorov-Sirnov Test (KST)}: Given two (continuous) distributions $p_r(x)$ and $p_s(x)$ ($r$ denotes real and $s$ denotes synthetic), KST quantifies the distance between the two distributions using the upper bound of the discrepancy between two corresponding Cumulative Distribution Functions (CDFs):
+\begin{equation}
+    {\rm KST} = \sup\limits_{x}  | F_r(x) - F_s(x) |,
+\end{equation}
+where $F_r(x)$ and $F_s(x)$ are the CDFs of $p_r(x)$ and $p_s(x)$, respectively:
+\begin{equation}
+    F(x) = \int_{-\infty}^x p(x) {\rm d} x.
+\end{equation}
+
+\textit{Total Variation Distance (TVD)}: TVD computes the frequency of each category value and expresses it as a probability. Then, the TVD score is the average difference between the probabilities of the categories:
+\begin{equation}
+    {\rm TVD} = \frac{1}{2} \sum\limits_{\omega \in \Omega} |R(\omega) - S(\omega)|,
+\end{equation}
+where $\omega$ describes all possible categories in a column $\Omega$. $R(\cdot)$ and $S(\cdot)$ denotes the real and synthetic frequencies of these categories.
+
+\subsubsection{Pair-wise Column Correlation}
+
+\textit{Pearson Correlation Coefficient}: The Pearson correlation coefficient measures whether two continuous distributions are linearly correlated and is computed as:
+\begin{equation}
+    \rho_{x, y}  = \frac{ {\rm Cov} (x, y)}{\sigma_x \sigma_y},
+\end{equation}
+where $x$ and $y$ are two continuous columns. Cov is the covariance, and $\sigma$ is the standard deviation. 
+
+Then, the performance of correlation estimation is measured by the average differences between the real data's correlations and the synthetic data's corrections:
+\begin{equation}
+    {\text{Pearson Score}} = \frac{1}{2} \sE_{x,y} | \rho^{R}(x,y) - \rho^{S} (x,y)  |,
+\end{equation}
+where $\rho^R(x,y)$ and $ \rho^S(x,y))$ denotes the Pearson correlation coefficient between column $x$ and column $y$ of the real data and synthetic data, respectively. As $\rho \in [-1, 1]$, the average score is divided by $2$ to ensure that it falls in the range of $[0,1]$, then the smaller the score, the better the estimation.
+
+\textit{Contingency similarity}: For a pair of categorical columns $A$ and $B$, the contingency similarity score computes the difference between the contingency tables using the Total Variation Distance. The process is summarized by the formula below:
+\begin{equation}
+    \text{Contingency Score} = \frac{1}{2} \sum\limits_{\alpha \in A} \sum\limits_{\beta \in B} | R_{\alpha, \beta} - S_{\alpha, \beta}|,
+\end{equation}
+where $\alpha$ and $\beta$ describe all the possible categories in column $A$ and column $B$, respectively. $R_{\alpha, \beta}$ and $S_{\alpha, \beta}$ are the joint frequency of $\alpha$ and $\beta$ in the real data and synthetic data, respectively.
+
+\subsection{Details of Machine Learning Efficiency Experiments}\label{appendix:mle}
+As preliminarily illustrated in Sec.~\ref{sec:exp-downstream} and Appendix~\ref{appendix:dataset}, each dataset is first split into the real training and testing set. The generative models are learned on the real training set. After the models are learned, a synthetic set of equivalent size is sampled. 
+
+The performance of synthetic data on MLE tasks is evaluated based on the divergence of test scores using the real and synthetic training data. Therefore, we first train the machine learning model on the real training set, split into training and validation sets with a $8:1$ ratio. The classifier/regressor is trained on the training set, and the optimal hyperparameter setting is selected according to the performance on the validation set. After the optimal hyperparameter setting is obtained, the corresponding classifier/regressor is retrained on the training set and evaluated on the real testing set. We create 20 random splits for training and validation sets, and the performance reported in Table~\ref{tbl:exp-mle} is the mean and std of the AUC/RMSE score over the $20$ random trails. The performance of synthetic data is obtained in the same way.
+
+Below is the hyperparameter search space of the XGBoost Classifier/Regressor used in MLE tasks, and we select the optimal hyperparameters via grid search.
+\begin{itemize}
+    \item Number of estimators: [10, 50, 100]
+    \item Minimum child weight: [5, 10, 20].
+    \item Maximum tree depth: [1,10].
+    \item Gamma: [0.0, 1.0].
+\end{itemize}
+
+We use the implementations of these metrics from SDMetric\footnote{\url{https://docs.sdv.dev/sdmetrics}}.
+\section{Addition Experimental Results}\label{appendix:add}
+In this section, we compare the training and sampling time of different methods, taking the Adult dataset as an example.
+\subsection{Training / Sampling Time}
+\begin{table}[h] 
+    \centering
+    \caption{Comparison of training and sampling time of different methods, on Adult dataset. \modelname's training time is the summation of VAE's and Diffusion's training time.} 
+    \label{tbl:time}
+    \small
+    \begin{threeparttable}
+    {
+    \scalebox{1.0}
+    {
+	\begin{tabular}{lcccc}
+            \toprule[0.8pt]
+            \textbf{Method} &  Training & Sampling  \\
+            \midrule 
+            CTGAN & 1029.8s & 0.8621s  \\
+            TVAE & 352.6s & 0.5118s  \\
+            GOGGLE& 1h 34min & 5.342s  \\
+            GReaT & 2h 27min & 2min 19s \\
+            STaSy &  2283s  & 8.941s  \\
+            CoDi & 2h 56min & 4.616s \\
+            TabDDPM & 1031s & 28.92s \\
+            \modelname & 1758s + 664s & 1.784s \\
+		\bottomrule[1.0pt] 
+		\end{tabular}
+   }
+  }        
+  \end{threeparttable}
+\end{table}
+As shown in Fig.~\ref{tbl:time}, though having an additional VAE training process, the proposed \modelname has a similar training time to most of the baseline methods. In regard to the sampling time, \modelname requires merely $1.784$s to generate synthetic data of the same size as Adult's training data, which is close to the one-step sampling methods CTGAN and TVAE. Other diffusion-based methods take a much longer time for sampling. E.g., the most competitive method TabDDPM~\citep{tabddpm} takes $28.92$s for sampling. The proposed \modelname reduces the sampling time by $93\%$, and achieves even better synthesis quality.
+
+\subsection{Sample-wise Quality score of Synthetic Data ($\alpha$-Precison and $\beta$-Recall)}\label{appendix:quality}
+Experiments in Sec.~\ref{sec:exp} have evaluated the performance of synthetic data generated from different models using
+low-order statistics, including the column-wise density estimation (Table~\ref{tbl:exp-shape}) and pair-wise column correlation estimation (Table~\ref{tbl:exp-trend}). However, these results are insufficient to evaluate synthetic data's overall density estimation performance, as the generative model may simply learn to estimate the density of each single column individually rather than the joint probability of all columns. Furthermore, the MLE tasks also cannot reflect the overall density estimation performance since some unimportant columns might be overlooked. Therefore, in this section, we adopt higher-order metrics that focus more on the entire data distribution, i.e., the joint distribution of all the columns.
+
+Following~\citet{goggle} and ~\citet{faithful}, we adopt the $\alpha$-Precision and $\beta$-Recall proposed in~\citet{faithful}, two sample-level metric quantifying how faithful the synthetic data is. In general, $\alpha$-Precision evaluates the fidelity of synthetic data -- whether each synthetic example comes from the real-data distribution, $\beta$-Recall evaluates the coverage of the synthetic data, e.g., whether the synthetic data can cover the entire distribution of the real data (In other words, whether a real data sample is close to the synthetic data). \citet{goggle} also adopts the third metric, Authenticity -- whether the synthetic sample is generated randomly or simply copied from the real data. However, we found that authenticity score and beta-recall exhibit a predominantly negative correlation – their sum is nearly constant, and an improvement in beta-recall is typically accompanied by a decrease in authenticity score (we believe this is the reason for the relatively small differences in quality scores among the various models in GOGGLE~\citep{goggle}). Therefore, we believe that beta-recall and authenticity are not suitable for simultaneous use. 
+
+In Table~\ref{tbl:exp-alpha-precision} and Table~\ref{tbl:exp-beta-recall} we report the scores of $\alpha$-Precision and $\beta$-Recall, respectively. \modelname obtains the best $\alpha$-Precision scores on all the datasets, demonstrating the superior capacity of \modelname in generating synthetic data that is close to the real ones. In Table~\ref{tbl:exp-beta-recall}, we observe that TabSyn consistently achieves high $\beta$-Recall scores across six datasets. Although some baseline methods obtain higher $\beta$-recall scores on specific datasets, it can hardly be concluded that the synthetic data generated by these methods are of better quality since 1) their synthetic data has poor $\alpha$-Precision scores (e.g., GReaT on Adult, and STaSy on Magic), indicating that the synthetic data is far from the real data's manifold; 2) they fail to demonstrate stably competitive performance on other datasets (e.g., GReaT has high $\beta$-Recall scores on Adult but poor scores on Magic). We believe that to assess the quality of generation, the first consideration is whether the generated data is sufficiently authentic ($\alpha$-Precision), and the second is whether the generated data can cover all the modes of the real dataset ($\beta$-Recall). According to this criterion, the quality of data generated by TabSyn is the highest. It not only possesses the highest fidelity score but also consistently demonstrates remarkably high coverage on every dataset.
+
+\begin{table}[h] 
+    \centering
+    \caption{Comparison of $\alpha$-Precision scores. {\redbf{Bold Face}} represents the best score on each dataset. Higher values indicate superior results. \modelname outperforms all other baseline methods on all datasets.}  
+    \label{tbl:exp-alpha-precision}
+    \small
+% \begin{threeparttable}
+    {
+    \scalebox{0.83}
+    {
+	\begin{tabular}{lcccccc|ccc}
+            \toprule[0.8pt]
+            {Methods} & \textbf{Adult} & \textbf{Default} & \textbf{Shoppers} & \textbf{Magic} & \textbf{Beijing} & \textbf{News} & \textbf{Average} & \textbf{Ranking} \\
+            \midrule 
+            CTGAN    & $77.74${\tiny$\pm0.15$}  & $62.08${\tiny$\pm0.08$} & $76.97${\tiny$\pm0.39$} & $86.90${\tiny$\pm0.22$} & $96.27${\tiny$\pm0.14$} & $96.96${\tiny$\pm0.17$} & $82.82$ & $5$ \\
+            TVAE     & $98.17${\tiny$\pm0.17$}  & $85.57${\tiny$\pm0.34$} & $58.19${\tiny$\pm0.26$} & $86.19${\tiny$\pm0.48$} & $97.20${\tiny$\pm0.10$} & $86.41${\tiny$\pm0.17$} & $85.29$  & $4$ \\
+            GOGGLE  & $50.68$  & $68.89$ & $86.95$ & $90.88$ & $88.81$ & $86.41$ & $78.77$ & 8 \\
+            GReaT    & $55.79${\tiny$\pm0.03$}  & $85.90${\tiny$\pm0.17$}  & $78.88${\tiny$\pm0.13$} & $85.46${\tiny$\pm0.54$} & $98.32${\tiny$\pm0.22$} & - & $80.87$  & $6$ \\
+            STaSy    & $82.87${\tiny$\pm0.26$} & $90.48${\tiny$\pm0.11$} & $89.65${\tiny$\pm0.25$} & $86.56${\tiny$\pm0.19$} & $89.16${\tiny$\pm0.12$} & $94.76${\tiny$\pm0.33$} & $88.91$ & $2$ \\
+            CoDi & $77.58${\tiny$\pm0.45$} & $82.38${\tiny$\pm0.15$}  & $94.95${\tiny$\pm0.35$} & $85.01${\tiny$\pm0.36$} & $98.13${\tiny$\pm0.38$} & $87.15${\tiny$\pm0.12$} & $87.03$ & $3$ \\
+            TabDDPM  & $96.36${\tiny$\pm0.20$}  & $97.59${\tiny$\pm0.36$} & $88.55${\tiny$\pm0.68$} & $98.59${\tiny$\pm0.17$} & $97.93$\tiny${\pm0.30}$ & $0.00${\tiny$\pm0.00$} & $79.83$  & $7$ \\
+            \midrule
+            \modelname  & $\redbf{99.52}$\tiny$\redbf{\pm0.10}$  & $\redbf{99.26}$\tiny$\redbf{\pm0.27}$ & $\redbf{99.16}$\tiny$\redbf{\pm0.22}$ & $\redbf{99.38}$\tiny$\redbf{\pm0.27}$ & $\redbf{98.47}$\tiny$\redbf{\pm0.10}$& $\redbf{96.80}$\tiny$\redbf{\pm0.25}$ & $\redbf{98.67}$ & $1$ \\
+		\bottomrule[1.0pt] 
+		\end{tabular}
+  }
+  }
+	% \end{threeparttable}
+\end{table}
+
+\begin{table}[h] 
+    \centering
+    \caption{Comparison of $\beta$-Recall scores. {\redbf{Bold Face}} represents the best score on each dataset. Higher values indicate superior results. \modelname gives consistently high $\beta$-recall scores, indicating that the synthetic data covers a wide range of the real distribution. Although some baseline methods obtain higher scores on specific datasets, they fail to demonstrate stably competitive performance on other datasets.}  
+    \label{tbl:exp-beta-recall}
+    \small
+% \begin{threeparttable}
+    {
+    \scalebox{0.83}
+    {
+	\begin{tabular}{lcccccc|ccc}
+            \toprule[0.8pt]
+            {Methods} & \textbf{Adult} & \textbf{Default} & \textbf{Shoppers} & \textbf{Magic} & \textbf{Beijing} & \textbf{News} & \textbf{Average}  & \textbf{Ranking} \\
+            \midrule 
+            CTGAN    & $30.80${\tiny$\pm0.20$}  & $18.22${\tiny$\pm0.17$} & $31.80${\tiny$\pm0.350$} & $11.75${\tiny$\pm0.20$} & $34.80${\tiny$\pm0.10$} & $24.97${\tiny$\pm0.29$} & $25.39$ & $7$ \\
+            TVAE     & $38.87${\tiny$\pm0.31$}  & $23.13${\tiny$\pm0.11$} & $19.78${\tiny$\pm0.10$} & $32.44${\tiny$\pm0.35$} & $28.45${\tiny$\pm0.08$} & $29.66${\tiny$\pm0.21$} & $28.72$  & $6$  \\
+            GOGGLE  & $8.80$  & $14.38$ & $9.79$ & $9.88$ & $19.87$ & $2.03$  & $10.79$ & $8$ \\
+            GReaT    & $\redbf{49.12}${\tiny$\redbf{\pm0.18}$}  & $42.04${\tiny$\pm0.19$}  & $44.90${\tiny$\pm0.17$} & $34.91${\tiny$\pm0.28$} & $43.34${\tiny$\pm0.31$} & - & $43.34$ & $2$ \\
+            STaSy    & $29.21${\tiny$\pm0.34$} & $39.31${\tiny$\pm0.39$} & $37.24${\tiny$\pm0.45$} & $\redbf{53.97}${\tiny$\redbf{\pm0.57}$} & $54.79${\tiny$\pm0.18$} & $39.42${\tiny$\pm0.32$} & $42.32$ & $3$ \\
+            CoDi & $9.20${\tiny$\pm0.15$} & $19.94${\tiny$\pm0.22$}  & $20.82${\tiny$\pm0.23$} & $50.56${\tiny$\pm0.31$} & $52.19${\tiny$\pm0.12$} & $34.40${\tiny$\pm0.31$} & $31.19$ & $5$ \\
+            TabDDPM  & $47.05${\tiny$\pm0.25$}  & $47.83${\tiny$\pm0.35$} & $47.79${\tiny$\pm0.25$} & $48.46${\tiny$\pm0.42$} & $\redbf{56.92}$\tiny$\redbf{\pm0.13}$ & $0.00${\tiny$\pm0.00$} & $41.34$ & $4$  \\
+            \midrule
+            \modelname  & ${47.56}$\tiny${\pm0.22}$  & $\redbf{48.00}$\tiny$\redbf{\pm0.35}$ & $\redbf{48.95}$\tiny$\redbf{\pm0.28}$ & ${48.03}$\tiny${\pm0.23}$ & $55.84$\tiny${\pm0.19}$ & $\redbf{45.04}$\tiny$\redbf{\pm0.34}$ & $\redbf{48.90}$  & $1$ \\
+		\bottomrule[1.0pt] 
+		\end{tabular}
+  }
+  }
+	% \end{threeparttable}
+\end{table}
+
+\subsection{Detection: Classifier Two Sample Tests (C2ST)}\label{appendix:detection}
+ We further study how difficult it is to tell apart the real data from the synthetic data, therefore evaluating if the synthetic data can recover the real data distribution. To this end, we employ the detection metric provided by sdmetrics \footnote{\url{https://docs.sdv.dev/sdmetrics/metrics/metrics-in-beta/detection-single-table}}. In Table~\ref{tbl:exp-detection}, we present the results obtained using logistic regression as the detection method.
+ \begin{table}[h]  
+    \centering
+    \caption{Detection score (C2ST) using logistic regression classifier. Higher scores indicate better performance.} 
+    \label{tbl:exp-detection}
+    \small
+    \begin{threeparttable}
+    {
+    \scalebox{1.0}
+    {
+	\begin{tabular}{lcccccc}
+            \toprule[0.8pt]
+             \textbf{Method} & \textbf{Adult} & \textbf{Default} & \textbf{Shoppers} & \textbf{Magic}  & \textbf{Beijing} & \textbf{News} \\
+            \midrule 
+            SMOTE &  $0.9710$ & $0.9274$ & $0.9086$ & $0.9961$ & $0.9888$ & $0.9344$ \\
+            \hline
+            CTGAN & $0.5949$ & $0.4875$ & $0.7488$ & $0.6728$ & $0.7531$ & $0.6947$   \\
+            TVAE & $0.6315$  & $0.6547$ & $0.2962$ & $0.7706$ & $0.8659$ & $0.4076$   \\
+            GOGGLE & $0.1114$  & $0.5163$ & $0.1418$ & $0.9526$ & $0.4779$ & $0.0745$  \\
+            GReaT & $0.5376$  & $0.4710$ & $0.4285$ & $0.4326$ & $0.6893$ & - \\
+            STaSy & $0.4054$  & $0.6814$ & $0.5482$ & $0.6939$ & $0.7922$ & $0.5287$  \\
+            CoDi & $0.2077$  & $0.4595$ & $0.2784$ & $0.7206$ & $0.7177$ & $0.0201$  \\
+            TabDDPM & $0.9755$  & $0.9712$ & $0.8349$ & $\redbf{0.9998}$ & $0.9513$ & $0.0002$  \\
+            \midrule 
+            \modelname &  $\redbf{0.9986}$  & $\redbf{0.9870}$ & $\redbf{0.9740}$ & $0.9732$ & $\redbf{0.9603}$ & $\redbf{0.9749}$ \\
+		\bottomrule[1.0pt] 
+		\end{tabular}
+  }
+  }
+	\end{threeparttable}
+\end{table}
+As indicated in the table, the Detection score exhibits superior discriminative power compared to other metrics, such as single-column density estimation, pair-wise column shape estimation, and MLE. The detection score shows significant variations across different models for synthetic data generation. As indicated in the table, the Detection score exhibits superior discriminative power compared to other metrics, such as single-column density estimation, pair-wise column shape estimation, and MLE. The detection score shows significant variations across different models for synthetic data generation. The proposed \modelname consistently achieves notably high scores across all datasets (SMOTE~\citep{smote} directly interpolates within the training set, so it is not surprising that it achieves high scores in the detection metric.).
+
+
+\subsection{Missing Value Imputation}\label{appendix:imputation}
+
+\paragraph{Adapting \modelname for missing value imputation}
+An essential advantage of the Diffusion Model is that an unconditional model can be directly used for missing data imputation tasks (e.g., image inpainting~\citep{vp, repaint} and missing value imputation) without retraining. Following the inpainting methods proposed in~\cite{repaint}, we apply the proposed \modelname in Missing Value Imputation Tasks.
+
+For a row of tabular data $\vz_i = [\vz_i^{\num}, \vz^{\oh}_{i,1}, \cdots \vz^{\oh}_{i, M_{\cat}}]$, $\vz_i^{\num} \in \sR^{1\times M_{\num}}$, $\vz^{\oh}_{i,j} \in \sR^{1\times C_j}$. Assume the index set of masked numerical columns is ${m}_{\num}$, and of masked categorical columns is ${m}_{\cat}$, we first preprocess the masked columns as follows:
+\begin{itemize}
+    \item The value of a masked numerical column is set as the averaged value of this column, i.e., $x^{\num}_{i,j} \Leftarrow {\rm mean} (\vz_{:, j}^{\num}), \forall j \in {m}_{\num}$.
+    \item The masked categorical column is set as $\vz_{i,j}^{\oh} \Leftarrow [\frac{1}{C_j}, \cdots,  \frac{1}{C_j}, \cdots \frac{1}{C_j}] \in \sR^{1\times C_j}, \forall j \in {m}_{\cat}$.
+\end{itemize}
+
+The updated $\vz_i$ (we omit the subscript in the remaining parts) is fed to \modelname's frozen VAE's encoder to obtain the embedding $\vz \in \sR^{1 \times Md}$. As \modelname's VAE employs the Transformer architecture, there is a deterministic mapping from the masked indexes in the data space ${m}_{\num}$ and ${m}_{\cat}$ to the masked indexes in the latent space. For example, the first dimension of the numerical column is mapped to dimension $1$ to $d$ in $\vz$. Therefore, we can create a masking vector $\vm$ indicating whether each dimension is masked. Then, the known and unknown part of $\vz$ could be expressed as $\vm \odot \vz$ and $(1-\vm) \odot \vz$, respectively.
+
+Following \citet{repaint}, the reverse step is modified as a mixture of the known part's forwarding and the unknown part's denoising:
+\begin{equation}\label{eqn:repaint}
+\begin{split}
+    \vz_{t_{i-1}}^{\rm known} & = \vz + \sigma(t_{i-1}) \bm{\varepsilon}, \bm{\varepsilon} \sim \gN(\bm{0}, \mI), \\
+ \vz_{t_{i-1}}^{\rm unknown} & = \vz_{t_i} + \int_{t_i}^{t_{i-1}} {\rm d}\vz_{t_i},  \\
+    \vz_{t_{i-1}} & = \vm \odot \vz_{t_{i-1}}^{\rm known} + (1-\vm) \odot \vz_{t_{i-1}}^{\rm unknown},  \\
+ \text{where} \;\; {\rm d}\vz_t & =  -\dot{\sigma}(t) \sigma(t) \nabla_{\vz_t} \log p(\vz_t) {\rm d}t + \sqrt{\dot{\sigma}(t) \sigma(t)} {\rm d} \bm{\omega}_t. \\
+\end{split}
+\end{equation}
+
+The reverse imputation from time $t_i$ to $t_{i-1}$ also involves resampling in order to reduce the error brought by each step~\citep{repaint}. Resampling indicates that Eq.~\ref{eqn:repaint} will be repeated for $U$ steps from $\vz_{t_i}$ to $\vz_{t_{i-1}}$. After completing the reverse steps, we obtain the imputed latent vector $\vz_0$, which could be put into \modelname's VAE decoder to recover the original input data.
+
+The algorithm for missing value imputation is presented in Algorithm~\ref{algorithm:imputation}.
+
+\begin{algorithm}[H]
+    \centering
+    \caption{\modelname for Missing Value Imputation}\label{algorithm:imputation}
+    \begin{algorithmic}[1]
+        \STATE \textbf{1. VAE encoding}
+        \STATE $\vz = [\vz^{\num}, \vz^{\oh}_{1}, \cdots \vz^{\oh}_{M_{\cat}}]$ is a data sample having missing values.
+        \STATE ${m}_{\num}$ denotes the missing numerical columns.
+        \STATE ${m}_{\cat}$ denotes the missing categorical columns.
+        \STATE $x^{\num}_{:,j} \Leftarrow {\rm mean} (\vz_{:, j}^{\num}), \forall j \in {m}_{\num}$.
+        \STATE $\vz_{i,j}^{\oh}\Leftarrow [\frac{1}{C_j}, \cdots,  \frac{1}{C_j}, \cdots \frac{1}{C_j}] \in \sR^{1\times C_j}, \forall j \in {m}_{\cat}$.
+        \STATE $\vz = {\rm Flatten} ({\rm Encoder}(\vz)) \in \sR^{1\times Md} $
+        \STATE
+        
+        \STATE \textbf{2. Obtaining the masking vector}
+        \STATE $\vm \in \sR^{1\times Md}$
+        \FOR{$j=1, \dots, Md$}
+        \IF{$ (\lfloor j/d \rfloor) \in {m}_{\num}$ or $ (\lfloor j/d \rfloor - M_{\num}) \in {m}_{\cat}$ }
+        \STATE $\vm_j = 0$ 
+        \ELSE{
+        \STATE $\vm_j = 1$
+        }
+        \ENDIF  
+        \ENDFOR
+        \STATE
+
+        \STATE \textbf{3. Missing Value Imputation via Denoising}
+        \STATE $\vz_{t_{\max}} = \vz + \sigma(t_{\max})\bm{\varepsilon}, \bm{\varepsilon} \sim \gN(\bm{0}, \mI) $
+        \FOR{$i = \max, \cdots, 1$}
+        \FOR{$u = 1, \cdots, U$}
+        \STATE $\vz_{t_{i-1}}^{\rm known} = \vz + \sigma(t_{i-1}) \bm{\varepsilon}, \bm{\varepsilon} \sim \gN(\bm{0}, \mI) $
+        \STATE $\vz_{t_{i-1}}^{\rm unknown}  = \vz_{t_i} + \int_{t_i}^{t_{i-1}} {\rm d}\vz_{t_i}$
+        \STATE ${\rm d} \vz$ is defined in Eq.~\ref{eqn:reverse}
+        \STATE $ \vz_{t_{i-1}} = \vm \odot \vz_{t_{i-1}}^{\rm known} + (1-\vm) \odot \vz_{t_{i-1}}^{\rm unknown}$
+        \IF{$ u < U$ and $ t > 1$ }
+        \STATE \#\#\# Resampling
+        \STATE $\vz_{t_{i}} = \vz_{t_{i-1}} + \sqrt{\sigma^2(t_{i}) - \sigma^2(t_{i-1}) }\bm{\varepsilon}, \bm{\varepsilon} \sim \gN(\bm{0}, \mI) $
+        \ENDIF  
+        \ENDFOR
+        \ENDFOR
+        \STATE $\vz_{0} = \vz_{t_0}$
+        \STATE
+        
+        \STATE \textbf{4. VAE decoding}
+        \STATE $\hat{\vz} = {\rm Decoder} ({\rm Unflatten} (\vz_0))$ 
+        \STATE $\hat{\vz} $ is the imputed data
+    \end{algorithmic}
+\end{algorithm}
+
+\paragraph{Classification/Regression as missing value imputation.} With Algorithm~\ref{algorithm:imputation}, we are able to use \modelname for imputation with any missing columns. In this section, we consider a more interesting application -- treating classification/regression as missing value imputation tasks directly. As illustrated in Section~\ref{appendix:dataset}, each dataset is assigned a machine learning task, either a classification or regression on the target column in the dataset. Therefore, we can mask the values of the target columns, then apply \modelname to impute the masked values, completing the classification or regression tasks. 
+
+In Table~\ref{tbl:exp-impute}, we present \modelname's performance in missing value imputation tasks on the target column of each dataset. The performance is compared with directly training a classifier/regressor, using the remaining columns to predict the target column (the 'Real' row in Machine Learning Efficiency tasks, Table~\ref{tbl:exp-mle}). Surprisingly, imputing with TabSyn shows highly competitive results on all datasets. On four of six datasets, TabSyn outperforms training a discriminate ML classifier/regressor on real data. We suspect that the reason for this phenomenon may be that discriminative ML models are more prone to overfitting on the training set. In contrast, by learning the smooth distribution of the entire data, generative models significantly reduce the risk of overfitting. The excellent results on the missing value imputation task further highlight the significant importance of our proposed TabSyn for real-world applications. 
+
+Our \modelname is not trained conditionally on other columns for the missing value imputation tasks, and the performance can be further improved by training a separate conditional model specifically for this task. We leave it for future work.
+\begin{table}[h]  
+    \centering
+    \caption{Performance of \modelname in Missing Value Imputation tasks, compared with training an XGBoost classifier/regressor using the real data.} 
+    \label{tbl:exp-impute}
+    \small
+    \begin{threeparttable}
+    {
+    \scalebox{1.0}
+    {
+	\begin{tabular}{lcccccc}
+            \toprule[0.8pt]
+            \multirow{2}{*}{Methods} & {\textbf{Adult}} &{\textbf{Default}} & \textbf{Shoppers} & {\textbf{Magic}} &   {\textbf{Beijing}} & {\textbf{News}} \\
+            \cmidrule{2-7} 
+            & AUC $\uparrow$ & AUC $\uparrow$ &  AUC $\uparrow$ &  AUC $\uparrow$  & RMSE $\downarrow$ &  RMSE $\downarrow$ \\
+            \midrule 
+            Real with XGBoost & $92.7$ & $77.0$ & $92.6$  & $\redbf{94.6}$  & $0.423$ & $\redbf{0.842}$ \\
+            \midrule
+            Impute with \modelname  & $\redbf{93.2}$ & $\redbf{87.2}$ & $\redbf{96.6}$ & ${88.8}$ &  $\redbf{0.258}$ & ${1.253}$
+            \\ 
+		\bottomrule[1.0pt] 
+		\end{tabular}
+  }
+  }
+	\end{threeparttable}
+\end{table}
+
+
+\subsection{Impacts of the quality of VAEs}
+Intuitively, the performance of TabSyn appears to be highly dependent on the quality of the pre-trained VAE model. Therefore, we conduct further research to investigate how a less trained VAE model would impact the quality of synthetic data generated by TabSyn. To this end, we investigate the quality of synthetic data generated by TabSyn using the embeddings of the VAE obtained at different epochs as the latent space. Figure~\ref{fig:vae_epoch} plots the results of single-column density estimation and pair-wise column correlation estimation on the Adult and Default datasets, with intervals set at 400 epochs. We can observe that increasing the training epochs of the VAE does indeed improve the quality of TabSyn's generated data. Additionally, even when the VAE is sub-optimal (e.g., training epochs around 2000), TabSyn's performance is already very close to the optimal ones. Furthermore, even with a relatively low number of VAE training epochs (e.g., 800-1200), TabSyn's performance approaches or even surpasses the most competitive baseline, TabDDPM. Based on this observation, we recommend thoroughly training the VAE to achieve superior data generation quality when resources are abundant. However, when resources are limited, reducing the VAE training duration still yields decent performance.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width = 1.0\linewidth]{Fig/vae_epoch.pdf} 
+    \caption{Performance of \modelname with VAEs trained for different epochs. By default, \modelname's VAE is trained with 4000 epochs}
+    \label{fig:vae_epoch}
+\end{figure}
+\subsection{Privacy Protection: Distance to Closest Record (DCR)}\label{appendix:dcr}
+To study if the synthetic data will cause privacy information leakage issues, we compute the DCRs of the synthetic data. Specifically, we follow the 'synthetic vs. holdout' setting~\footnote{\url{https://www.clearbox.ai/blog/2022-06-07-synthetic-data-for-privacy-\\preservation-part-2}}. We initially divide the dataset into two equal parts: the first part served as the training set for training our generative model, while the second part was designated as the holdout set, which is not used for training. After completing model training, we sample a synthetic set of the same size as the training set (and the holdout set). 
+
+We then calculate the DCR scores for each sample in the synthetic set concerning both the training set and the holdout set. We can create histograms to visualize the distribution of DCR scores for the synthetic set in comparison to both the training and holdout sets. Intuitively, if there is a privacy issue (e.g. if the synthetic set is directly copied from the training set), then the DCR scores for the training set should be closer to 0 than those for the testing set. Conversely, if there is no privacy issue, the distributions of DCR scores of the training and holdout sets should largely overlap. In Figure~\ref{fig:dcr}, we plot the distributions of synthetic sets' DCRs concerning the training set and holdout set on Default and Shoppers. We can observe that deep generative models such as CoDi, STaSy, TabDDPM, and TabSyn do not suffer from privacy issues, while the interpolation-based method SMOTE might not be able to protect privacy information.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width = 1.0\linewidth]{Fig/dcr.pdf} 
+    \caption{Distributions of the DCR scores between the synthetic dataset and the training/holdout datasets. Deep generative models have similar DCR distributions concerning the training set and holdout set, while in the interpolation-based method SMOTE, DCRs concerning the training set are much smaller than DCRs concerning the holdout set.}
+    \label{fig:dcr}
+\end{figure}
+
+Additionally, we calculate the probability that a synthetic sample is closer to the training set (rather than the holdout set). When this probability is close to 50\% (i.e., 0.5), it indicates that the distribution of distances between synthetic and training instances is very similar (or at least not systematically smaller) than the distribution of distances between synthetic and holdout instances, which is a positive indicator in terms of privacy risk. Table~\ref{tbl:dcr} displays the results obtained by different models on Default and Shoppers datasets.
+
+ \begin{table}[h]  
+    \centering
+    \caption{DCR score (the probability that a synthetic example is closer to the training set rather than the holdout set (\%, a score closer to $50\%$ is better).} 
+    \label{tbl:dcr}
+    \small
+    \begin{threeparttable}
+    {
+    \scalebox{1.0}
+    {
+	\begin{tabular}{lcccccc}
+            \toprule[0.8pt]
+             \textbf{Method} & \textbf{Default} & \textbf{Shoppers}  \\
+            \midrule 
+            SMOTE & $91.41$\%{\tiny$\pm3.42$} & $96.40$\%{\tiny$\pm4.70$}  \\
+            STaSy & $50.23$\%{\tiny$\pm0.09$} & $51.53$\%{\tiny$\pm0.16$} \\
+            CoDi  & $51.82$\%{\tiny$\pm0.26$} & $51.06$\%{\tiny$\pm0.18$}  \\
+            TabDDPM & $52.15$\%{\tiny$\pm0.20$} & $63.23$\%{\tiny$\pm0.25$}   \\
+            \midrule 
+            \modelname & $51.20$\%{\tiny$\pm0.18$} & $52.90$\% {\tiny$\pm0.22$}\\
+		\bottomrule[1.0pt] 
+		\end{tabular}
+  }
+  }
+	\end{threeparttable}
+\end{table}
+
+
+
+\section{Details for Reproduction}\label{appendix:implementation}
+In this section, we introduce the details of \modelname, such as the data preprocessing, training, and hyperparameter details. We also present details of our reproduction for the baseline methods.
+
+\subsection{Details of implementing \modelname}
+\paragraph{Data Preprocessing.}
+Real-world tabular data often contain missing values, and each column's data may have distinct scales. Therefore, we need to preprocess the data. Following TabDDPM~\citep{tabddpm}, missing cells are filled with the column's average for numerical columns. For categorical columns, missing cells are treated as one additional category. Then, each numerical/categorical column is transformed using the QuantileTransformer\footnote{\url{https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.QuantileTransformer.html}}/OneHotEncoder\footnote{\url{https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.OneHotEncoder.html}} from scikit-learn, respectively.
+
+\paragraph{Hyperparameter settings.} \textbf{\modelname uses the same set of parameters for different datasets.} (except $\beta_{\max}$ for Shoppers). The detailed architectures of the VAE and Diffusion model of \modelname have been presented in Appendix~\ref{appendix:vae} and Appendix~\ref{appendix:mlp}, respectively.
+Below is the detailed hyperparameter setting.
+
+Hyperparameters of VAE:
+\begin{itemize}
+    \item Token dimension $d = 4$,
+    \item Number of Layers of VAEs' encoder/decoder: $2$,
+    \item Hidden dimension of Transformer's FFN: $4 * 32 = 128$,
+    \item $\beta_{\max} = 0.01$ ($\beta_{\max} = 0.001$ for Shoppers),
+    \item $\beta_{\min} = 10^{-5}$ , 
+    \item $\lambda = 0.7$.
+\end{itemize}
+
+Hyperparameters of Diffusion:
+\begin{itemize}
+    \item MLP's hidden dimension $d_{\rm hidden} = 1024$.
+\end{itemize}
+
+Unlike the cumbersome hyperparameter search process in some current methods~\citep{tabddpm, stasy, codi} to obtain the optimal hyperparameters, \modelname consistently generates high-quality data without the need for meticulous hyperparameter tuning. 
+ 
+\subsection{Details of implementing baselines}
+Since different methods have adopted distinct neural network architectures, it is inappropriate to compare the performance of different methods using identical networks. For fair comparison, we adjust the hidden dimensions of different methods, ensuring that the numbers of trainable parameters are close (around $10$ million). Note that enlarging the model size does lead to better performance for the baseline methods. Under these conditions, we reproduced the baseline methods based on the official codes, and \textbf{our reproduced codes are provided in the supplementary}. Below are the detailed implementations of the baselines.
+
+\textbf{CTGAN and TVAE}~\citep{ctgan}: For CTGAN, we follow the implementations in the official codes\footnote{\url{https://github.com/sdv-dev/CTGAN}}, where the hyperparameters are well-given. Since the default discriminator/generator MLPs are small, we enlarge them to be the same size as \modelname for fair comparison. The interface for TVAE is not provided, so we simply use the default hyperparameters defined in the TVAE module. The sizes of TVAE's encoder/decoder are enlarged as well.
+
+\textbf{GOGGLE}~\citep{goggle}: We follow the official implementations\footnote{\url{https://github.com/vanderschaarlab/GOGGLE}}. In GOGGLE's official implementation, each node is a column, and the node feature is the $1$-dimensional numerical value of this column.  However, GOGGLE did not illustrate and failed to explain how to handle categorical columns~\footnote{\url{https://github.com/tennisonliu/GOGGLE/issues/2}}. To extend GOGGLE to mixed-type tabular data, we first transform each categorical column into its $C$-dimensional one-hot encoding. Then, each single dimension of $0/1$ binary values becomes the graph node. Consequently, for a mixed-type tabular data of $M_{\num}$ numerical columns and $M_{\cat}$ categorical columns and the $i$-th categorical column of $C_i$ categories, GOGGLE's graph has $M_{\num} + \sum\limits_{i} C_i$ nodes. 
+
+\textbf{GReaT}: We follow the official implementations\footnote{\url{https://github.com/kathrinse/be_great/tree/main}}. During our reproduction, we found that the training of GReaT is memory and time-consuming (because it is fine-tuning a large language model). Typically, the batch size is limited to $32$ on the Adult dataset, and training for $200$ epochs takes over $2$ hours. In addition, since GReaT is textual-based, the generated content is not guaranteed to follow the format of the given table. Therefore, additional post-processing has to be applied.
+
+\textbf{STaSy}~\citep{stasy}: In STaSy, the categorical columns are encoded with one-hot encoding and then are put into the continuous diffusion model together with the numerical columns. We follow the default hyperparameters given by the official codes\footnote{\url{https://github.com/JayoungKim408/STaSy/tree/main}} except for the denoising function's size, which is enlarged for a fair comparison. 
+
+\textbf{CoDi}~\citep{codi}: We follow the default hyperparameters given by the official codes\footnote{\url{https://github.com/ChaejeongLee/CoDi/tree/main}}. Similarly, the denoising U-Nets used by CoDi are also enlarged to ensure similar model parameters.
+
+\textbf{TabDDPM}~\citep{tabddpm}: The official code of TabDDPM\footnote{\url{https://github.com/yandex-research/tab-ddpm}} is for conditional generation tasks, where the non-target columns are generated conditioned on the target column(s). We slightly modify the code to be applied to unconditional generation.
