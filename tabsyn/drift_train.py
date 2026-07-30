@@ -17,7 +17,7 @@ from tabsyn.latent_utils import get_input_train
 warnings.filterwarnings('ignore')
 
 
-def compute_drifting_field(x, y_pos, y_neg, temperatures):
+def compute_drifting_field(x, y_pos, y_neg, temperatures, drift_scale=1.5):
     """
     Computes the Drifting Field V(x) based on Algorithm 2 and Eq. (11) of Deng et al. (2025).
     
@@ -26,6 +26,7 @@ def compute_drifting_field(x, y_pos, y_neg, temperatures):
         y_pos: Real data samples [N_pos, D]
         y_neg: Generated samples [N_neg, D] (detached)
         temperatures: List of temperature scalars for the multi-scale kernel.
+        drift_scale: Drift multiplier factor c (default: 1.5)
     """
     N, D = x.shape
     N_pos = y_pos.shape[0]
@@ -76,7 +77,7 @@ def compute_drifting_field(x, y_pos, y_neg, temperatures):
 
         total_drift += (V_pos - V_neg)
 
-    return total_drift
+    return total_drift * drift_scale
 
 
 class ResBlock(nn.Module):

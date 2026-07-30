@@ -19,51 +19,34 @@ CATEGORICAL = "categorical"
 CONTINUOUS = "continuous"
 
 _MODELS = {
-    'binclass': [ # 184
-        #  {
-        #      'class': DecisionTreeClassifier, # 48
-        #      'kwargs': {
-        #          'max_depth': [4, 8, 16, 32], 
-        #          'min_samples_split': [2, 4, 8],
-        #          'min_samples_leaf': [1, 2, 4, 8]
-        #      }
-        #  },
-        #  {
-        #      'class': AdaBoostClassifier, # 4
-        #      'kwargs': {
-        #          'n_estimators': [10, 50, 100, 200]
-        #      }
-        #  },
-        #  {
-        #     'class': LogisticRegression, # 36
-        #     'kwargs': {
-        #          'solver': ['lbfgs'],
-        #          'n_jobs': [-1],
-        #          'max_iter': [10, 50, 100, 200],
-        #          'C': [0.01, 0.1, 1.0],
-        #          'tol': [1e-01, 1e-02, 1e-04]
-        #      }
-        #  },
-        # {
-        #     'class': MLPClassifier, # 12
-        #     'kwargs': {
-        #         'hidden_layer_sizes': [(100, ), (200, ), (100, 100)],
-        #         'max_iter': [50, 100],
-        #         'alpha': [0.0001, 0.001]
-        #     }
-        # },
-        # {
-        #     'class': RandomForestClassifier, # 48
-        #     'kwargs': {
-        #          'max_depth': [8, 16, None], 
-        #          'min_samples_split': [2, 4, 8],
-        #          'min_samples_leaf': [1, 2, 4, 8],
-        #         'n_jobs': [-1]
-
-        #     }
-        # },
+    'binclass': [
         {
-            'class': XGBClassifier, # 36
+            'class': LogisticRegression,
+            'kwargs': {
+                 'solver': ['lbfgs'],
+                 'n_jobs': [-1],
+                 'max_iter': [100, 200],
+                 'C': [0.1, 1.0]
+             }
+        },
+        {
+            'class': MLPClassifier,
+            'kwargs': {
+                'hidden_layer_sizes': [(100, ), (200, )],
+                'max_iter': [100, 200],
+                'alpha': [0.0001, 0.001]
+            }
+        },
+        {
+            'class': RandomForestClassifier,
+            'kwargs': {
+                 'max_depth': [8, 16, None], 
+                 'min_samples_split': [2, 4],
+                 'n_jobs': [-1]
+            }
+        },
+        {
+            'class': XGBClassifier,
             'kwargs': {
                  'n_estimators': [10, 50, 100],
                  'min_child_weight': [1, 10], 
@@ -74,38 +57,26 @@ _MODELS = {
                  'tree_method': ['hist']
             },
         }
-
     ],
-    'multiclass': [ # 132
-        
-        # {
-        #     'class': MLPClassifier, # 12
-        #     'kwargs': {
-        #         'hidden_layer_sizes': [(100, ), (200, ), (100, 100)],
-        #         'max_iter': [50, 100],
-        #         'alpha': [0.0001, 0.001]
-        #     }
-        # },
-        #  {
-        #      'class': DecisionTreeClassifier, # 48
-        #      'kwargs': {
-        #          'max_depth': [4, 8, 16, 32], 
-        #          'min_samples_split': [2, 4, 8],
-        #          'min_samples_leaf': [1, 2, 4, 8]
-        #      }
-        #  },
-        # {
-        #     'class': RandomForestClassifier, # 36
-        #     'kwargs': {
-        #          'max_depth': [8, 16, None], 
-        #          'min_samples_split': [2, 4, 8],
-        #          'min_samples_leaf': [1, 2, 4, 8],
-        #          'n_jobs': [-1]
-
-        #     }
-        # },
+    'multiclass': [
         {
-            'class': XGBClassifier, # 36
+            'class': MLPClassifier,
+            'kwargs': {
+                'hidden_layer_sizes': [(100, ), (200, )],
+                'max_iter': [100, 200],
+                'alpha': [0.0001, 0.001]
+            }
+        },
+        {
+            'class': RandomForestClassifier,
+            'kwargs': {
+                 'max_depth': [8, 16, None], 
+                 'min_samples_split': [2, 4],
+                 'n_jobs': [-1]
+            }
+        },
+        {
+            'class': XGBClassifier,
             'kwargs': {
                  'n_estimators': [10, 50, 100],
                  'min_child_weight': [1, 10], 
@@ -116,22 +87,21 @@ _MODELS = {
                  'tree_method': ['hist']
             }
         }
-
     ],
-    'regression': [ # 84
-        # {
-        #     'class': LinearRegression,
-        # },
-        # {
-        #    'class': MLPRegressor, # 12
-        #    'kwargs': {
-        #        'hidden_layer_sizes': [(100, ), (200, ), (100, 100)],
-        #        'max_iter': [50, 100],
-        #        'alpha': [0.0001, 0.001]
-        #    }
-        #},
+    'regression': [
         {
-            'class': XGBRegressor, # 36 
+            'class': LinearRegression,
+        },
+        {
+           'class': MLPRegressor,
+           'kwargs': {
+               'hidden_layer_sizes': [(100, ), (200, )],
+               'max_iter': [100, 200],
+               'alpha': [0.0001, 0.001]
+           }
+        },
+        {
+            'class': XGBRegressor,
             'kwargs': {
                  'n_estimators': [10, 50, 100],
                  'min_child_weight': [1, 10], 
@@ -142,15 +112,14 @@ _MODELS = {
                  'tree_method': ['hist']
             }
         },
-        # {
-        #     'class': RandomForestRegressor, # 36
-        #     'kwargs': {
-        #          'max_depth': [8, 16, None], 
-        #          'min_samples_split': [2, 4, 8],
-        #          'min_samples_leaf': [1, 2, 4, 8],
-        #          'n_jobs': [-1]
-        #     }
-        # }
+        {
+            'class': RandomForestRegressor,
+            'kwargs': {
+                 'max_depth': [8, 16, None], 
+                 'min_samples_split': [2, 4],
+                 'n_jobs': [-1]
+            }
+        }
     ]
 }
 
