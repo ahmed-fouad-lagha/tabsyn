@@ -64,7 +64,11 @@ def main(args):
                 target_z = model(z)
                 z = z + dt * (target_z - z)
             fake_z = z
-        fake_z = fake_z * std + mean
+        if 'std' in norm_stats:
+            std = norm_stats['std'].to(device)
+            fake_z = fake_z * std + mean
+        else:
+            fake_z = fake_z * 2.0 + mean
 
     syn_data = fake_z.float().cpu().numpy()
     

@@ -135,11 +135,10 @@ def main(args):
 
     in_dim = train_z.shape[1]
     mean = train_z.mean(0)
-    std = train_z.std(0).clamp(min=1e-6)
-    train_data = (train_z - mean) / std
+    train_data = (train_z - mean) / 2.0
 
     # Save normalization stats and model config
-    torch.save({'mean': mean, 'std': std}, f'{ckpt_path}/drift_norm.pt')
+    torch.save({'mean': mean}, f'{ckpt_path}/drift_norm.pt')
     config = {
         'in_dim': in_dim,
         'hidden_size': args.hidden_size,
