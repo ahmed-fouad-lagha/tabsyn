@@ -189,7 +189,7 @@ def main(args):
             y_pos = z_batch
             y_neg = fake_z.detach()
 
-            V = compute_drifting_field(fake_z, y_pos, y_neg, temperatures)
+            V = compute_drifting_field(fake_z, y_pos, y_neg, temperatures, drift_scale=args.drift_scale)
 
             target = (fake_z + V).detach()
 
@@ -235,6 +235,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate.')
     parser.add_argument('--hidden_size', type=int, default=1024, help='Hidden size (1024 matches TabSyn ~10M params).')
     parser.add_argument('--clip', type=float, default=1.0, help='Gradient clipping norm.')
+    parser.add_argument('--drift_scale', type=float, default=1.5, help='Drift scale factor multiplier c (default: 1.5).')
     parser.add_argument('--patience', type=int, default=250, help='Early stopping patience epochs.')
     parser.add_argument('--temperatures', type=float, nargs='+', default=[0.1, 0.5, 1.0, 2.0], help='Multi-scale kernel temperatures (calibrated for tabular VAE latents).')
     args = parser.parse_args()
