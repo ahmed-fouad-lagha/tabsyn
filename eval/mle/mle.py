@@ -1,6 +1,18 @@
 import numpy as np
 import pandas as pd
 from xgboost import XGBClassifier, XGBRegressor
+try:
+    from catboost import CatBoostClassifier, CatBoostRegressor
+except ImportError:
+    CatBoostClassifier = None
+    CatBoostRegressor = None
+
+try:
+    from lightgbm import LGBMClassifier, LGBMRegressor
+except ImportError:
+    LGBMClassifier = None
+    LGBMRegressor = None
+
 from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.neural_network import MLPClassifier, MLPRegressor
@@ -18,46 +30,68 @@ from tqdm import tqdm
 CATEGORICAL = "categorical"
 CONTINUOUS = "continuous"
 
-_MODELS = {
-    'binclass': [
-        {
-            'class': LogisticRegression,
-            'kwargs': {
-                 'solver': ['lbfgs'],
-                 'n_jobs': [-1],
-                 'max_iter': [100, 200],
-                 'C': [0.1, 1.0]
-             }
-        },
-        {
-            'class': MLPClassifier,
-            'kwargs': {
-                'hidden_layer_sizes': [(100, ), (200, )],
-                'max_iter': [100, 200],
-                'alpha': [0.0001, 0.001]
-            }
-        },
-        {
-            'class': RandomForestClassifier,
-            'kwargs': {
-                 'max_depth': [8, 16, None], 
-                 'min_samples_split': [2, 4],
-                 'n_jobs': [-1]
-            }
-        },
-        {
-            'class': XGBClassifier,
-            'kwargs': {
-                 'n_estimators': [10, 50, 100],
-                 'min_child_weight': [1, 10], 
-                 'max_depth': [5, 10, 20],
-                 'gamma': [0.0, 1.0],
-                 'objective': ['binary:logistic'],
-                 'nthread': [-1],
-                 'tree_method': ['hist']
-            },
+binclass_models = [
+    {
+        'class': LogisticRegression,
+        'kwargs': {
+             'solver': ['lbfgs'],
+             'n_jobs': [-1],
+             'max_iter': [100, 200],
+             'C': [0.1, 1.0]
+         }
+    },
+    {
+        'class': MLPClassifier,
+        'kwargs': {
+            'hidden_layer_sizes': [(100, ), (200, )],
+            'max_iter': [100, 200],
+            'alpha': [0.0001, 0.001]
         }
-    ],
+    },
+    {
+        'class': RandomForestClassifier,
+        'kwargs': {
+             'max_depth': [8, 16, None], 
+             'min_samples_split': [2, 4],
+             'n_jobs': [-1]
+        }
+    },
+    {
+        'class': XGBClassifier,
+        'kwargs': {
+             'n_estimators': [10, 50, 100],
+             'min_child_weight': [1, 10], 
+             'max_depth': [5, 10, 20],
+             'gamma': [0.0, 1.0],
+             'objective': ['binary:logistic'],
+             'nthread': [-1],
+             'tree_method': ['hist']
+        },
+    }
+]
+
+if CatBoostClassifier is not None:
+    binclass_models.append({
+        'class': CatBoostClassifier,
+        'kwargs': {
+            'iterations': [100, 200],
+            'depth': [4, 6, 8],
+            'verbose': [0]
+        }
+    })
+
+if LGBMClassifier is not None:
+    binclass_models.append({
+        'class': LGBMClassifier,
+        'kwargs': {
+            'n_estimators': [50, 100],
+            'max_depth': [5, 10],
+            'verbose': [-1]
+        }
+    })
+
+_MODELS = {
+    'binclass': binclass_models,
     'multiclass': [
         {
             'class': MLPClassifier,
