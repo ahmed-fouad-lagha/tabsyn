@@ -60,14 +60,17 @@ def compute_drifting_field(x, y_pos, y_neg, temperatures, drift_scale=1.5):
         A_row = torch.softmax(logits, dim=1)
         A_col = torch.softmax(logits, dim=0)
         A = torch.sqrt(A_row * A_col)
+        del logits, A_row, A_col
 
         A_pos, A_neg = torch.split(A, [N_pos, N_neg], dim=1)
+        del A
 
         term_y_pos = torch.mm(A_pos, y_pos)
         term_y_neg = torch.mm(A_neg, y_neg)
 
         sum_w_pos = A_pos.sum(dim=1, keepdim=True)
         sum_w_neg = A_neg.sum(dim=1, keepdim=True)
+        del A_pos, A_neg
 
         term_x_pos = sum_w_pos * x
         term_x_neg = sum_w_neg * x
@@ -76,6 +79,7 @@ def compute_drifting_field(x, y_pos, y_neg, temperatures, drift_scale=1.5):
         V_neg = term_y_neg - term_x_neg
 
         total_drift += (V_pos - V_neg)
+        del V_pos, V_neg, term_y_pos, term_y_neg, term_x_pos, term_x_neg
 
     return total_drift * drift_scale
 
