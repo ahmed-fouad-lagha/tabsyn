@@ -1,6 +1,7 @@
 import os
 import math
 import json
+import copy
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -139,11 +140,12 @@ def main(args):
 
     in_dim = train_z.shape[1]
     mean = train_z.mean(0)
-    std = train_z.std(0).clamp(min=1e-6)
-    train_data = (train_z - mean) / std
+    # Match TabSyn's normalization: (z - mean) / 2
+    # This preserves the VAE's learned scale hierarchy across dimensions
+    train_data = (train_z - mean) / 2
 
     # Save normalization stats and model config
-    torch.save({'mean': mean, 'std': std}, f'{ckpt_path}/drift_norm.pt')
+    torch.save({'mean': mean}, f'{ckpt_path}/drift_norm.pt')
     config = {
         'in_dim': in_dim,
         'hidden_size': args.hidden_size,
@@ -151,8 +153,6 @@ def main(args):
         'temperatures': args.temperatures,
         'dataname': args.dataname
     }
-    with open(f'{ckpt_path}/drift_config.json', 'w') as f:
-        json.dump(config, f, indent=4)
     with open(f'{ckpt_path}/drift_config.json', 'w') as f:
         json.dump(config, f, indent=4)
 
@@ -164,6 +164,10 @@ def main(args):
     model = TabDriftGenerator(z_dim=in_dim, hidden_size=args.hidden_size).to(device)
     optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
     scheduler = CosineAnnealingLR(optimizer, T_max=args.epochs, eta_min=1e-6)
+
+    # EMA model for stable inference (decay=0.999)
+    ema_model = copy.deepcopy(model)
+    ema_decay = 0.999
 
     num_epochs = args.epochs
     temperatures = args.temperatures
@@ -209,10 +213,16 @@ def main(args):
         scheduler.step()
         curr_loss = epoch_loss / len(train_data)
 
+        # Update EMA model
+        with torch.no_grad():
+            for ema_p, model_p in zip(ema_model.parameters(), model.parameters()):
+                ema_p.data.mul_(ema_decay).add_(model_p.data, alpha=1 - ema_decay)
+
         if curr_loss < best_loss:
             best_loss = curr_loss
             patience_counter = 0
             torch.save(model.state_dict(), drift_ckpt_path)
+            torch.save(ema_model.state_dict(), f'{ckpt_path}/drift_model_ema.pt')
         else:
             patience_counter += 1
 
