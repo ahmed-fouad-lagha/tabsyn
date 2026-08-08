@@ -42,6 +42,9 @@ def main(args):
 
     norm_stats = torch.load(norm_path, map_location=device)
     mean = norm_stats['mean'].to(device)
+    std = norm_stats.get('std', None)
+    if std is not None:
+        std = std.to(device)
 
     model = TabDriftGenerator(z_dim=in_dim, hidden_size=hidden_size, num_res_blocks=num_res_blocks).to(device)
     
@@ -71,8 +74,10 @@ def main(args):
                 target_z = model(z)
                 z = z + dt * (target_z - z)
             fake_z = z
-        # Unnormalize: reverse (z - mean) / 2 => z * 2 + mean
-        fake_z = fake_z * 2 + mean
+        if std is not None:
+            fake_z = fake_z * std + mean
+        else:
+            fake_z = fake_z * 2.0 + mean
 
     syn_data = fake_z.float().cpu().numpy()
     
