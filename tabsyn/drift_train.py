@@ -3,6 +3,7 @@ import math
 import json
 import copy
 import torch
+import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
@@ -143,6 +144,18 @@ def main(args):
     std = train_z.std(0).clamp(min=1e-6)
     train_data = (train_z - mean) / std
 
+    # Load marginalized latents
+    marginal_path = f'{ckpt_path}/train_z_marginal.npy'
+    if os.path.exists(marginal_path):
+        train_z_marginal = torch.tensor(np.load(marginal_path)).float().to(device)
+        marginal_data = (train_z_marginal - mean) / std
+    else:
+        raise FileNotFoundError(f"Marginal data not found at {marginal_path}. Run prepare_marginal.py first.")
+
+    # Combine into TensorDataset
+    from torch.utils.data import TensorDataset
+    dataset = TensorDataset(train_data, marginal_data)
+
     # Save normalization stats and model config
     torch.save({'mean': mean, 'std': std}, f'{ckpt_path}/drift_norm.pt')
     config = {
@@ -157,7 +170,7 @@ def main(args):
 
     batch_size = args.batch_size
     train_loader = DataLoader(
-        train_data, batch_size=batch_size, shuffle=True, num_workers=0 if device == 'cpu' else 4, drop_last=True
+        dataset, batch_size=batch_size, shuffle=True, num_workers=0 if device == 'cpu' else 4, drop_last=True
     )
 
     model = TabDriftGenerator(z_dim=in_dim, hidden_size=args.hidden_size).to(device)
@@ -186,15 +199,17 @@ def main(args):
         pbar = tqdm(train_loader, total=len(train_loader), leave=False)
         pbar.set_description(f'Epoch {epoch+1}/{num_epochs}')
 
-        for z_batch in pbar:
+        for z_batch, marginal_z_batch in pbar:
             z_batch = z_batch.float().to(device)
+            marginal_z_batch = marginal_z_batch.float().to(device)
             optimizer.zero_grad()
 
             noise = torch.randn_like(z_batch)
             fake_z = model(noise)
 
             y_pos = z_batch
-            y_neg = fake_z.detach()
+            # Contrastive Drifting: Repel from marginalized (shuffled) data instead of fake data
+            y_neg = marginal_z_batch
 
             V = compute_drifting_field(fake_z, y_pos, y_neg, temperatures, drift_scale=args.drift_scale)
 
@@ -210,7 +225,7 @@ def main(args):
             pbar.set_postfix({'Loss': f'{loss.item():.4e}'})
 
         scheduler.step()
-        curr_loss = epoch_loss / len(train_data)
+        curr_loss = epoch_loss / len(dataset)
 
         # Update EMA model
         with torch.no_grad():
